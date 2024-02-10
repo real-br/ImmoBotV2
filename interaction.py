@@ -1,0 +1,168 @@
+"""
+First, a few callback functions are defined. Those functions are used in the
+the bot.py script and registered at their respective places.
+Then, the bot is started and runs until we press Ctrl-C on the command line.
+
+Usage:
+Example of a bot-user conversation using ConversationHandler.
+Send /start to initiate the conversation.
+Press Ctrl-C on the command line or send a signal to the process to stop the
+bot.
+"""
+
+from functools import partial
+import logging
+import config
+
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    CallbackContext,
+    ConversationHandler,
+    MessageHandler,
+    filters,
+)
+
+
+# Enable logging
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
+# set higher logging level for httpx to avoid all GET and POST requests being logged
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
+
+logger = logging.getLogger(__name__)
+
+SEARCH_TYPE, BUDGET, LOCATION, NR_ROOMS = range(4)
+
+
+async def start(update: Update, context: CallbackContext) -> int:
+    """Starts the conversation and asks the user input."""
+    reply_keyboard = [["FOR_BUY", "FOR_RENT"]]
+
+    await update.message.reply_text(
+        "Hi! My name is Omen, here to save your precious time.\n"
+        "You can send /cancel to stop talking to me at any point.\n"
+        "Let's start by refining your search. Are you looking to buy or rent?",
+        reply_markup=ReplyKeyboardMarkup(
+            reply_keyboard,
+            one_time_keyboard=True,
+            input_field_placeholder="Buy or Rent?",
+        ),
+    )
+
+    return SEARCH_TYPE
+
+
+async def store_search_type_ask_budget(update: Update, context: CallbackContext) -> int:
+    """Stores the selected search type and asks for max price."""
+    user = update.message.from_user
+    search_type = update.message.text
+    logger.info("Search Type of %s: %s", user.first_name, search_type)
+    context.user_data["search_type"] = search_type
+    await update.message.reply_text(
+        "Got it! What is your maximum budget for this search?",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+
+    return BUDGET
+
+
+async def store_budget_ask_location(update: Update, context: CallbackContext) -> int:
+    """Stores the budget and asks for a location."""
+    user = update.message.from_user
+    budget = int(update.message.text)
+    context.user_data["budget"] = budget
+    logger.info("Budget of %s: %s", user.first_name, budget)
+    await update.message.reply_text(
+        "Perfect, I am confident we can find at least something in BXL NORD for this price!\n"
+        "Or quickly share your preferred postal codes now.",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+
+    return LOCATION
+
+
+async def store_location_ask_nr_rooms(update: Update, context: CallbackContext) -> int:
+    """Stores the location and asks nr of rooms."""
+    user = update.message.from_user
+    location = update.message.text
+    context.user_data["location"] = location
+    logger.info("Location of %s: %s", user.first_name, location)
+    await update.message.reply_text(
+        "And what number of rooms are you looking for?",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    return NR_ROOMS
+
+
+async def close(update: Update, context: CallbackContext, update_checker) -> int:
+    """Stores the NR rooms and ends the conversation."""
+    user = update.message.from_user
+    nr_rooms = int(update.message.text)
+    context.user_data["nr_rooms"] = nr_rooms
+    logger.info("Nr rooms of %s: %s", user.first_name, nr_rooms)
+
+    await update_checker(context)
+
+    await update.message.reply_text(
+        "Great, I'll keep you posted.", reply_markup=ReplyKeyboardRemove()
+    )
+
+    return ConversationHandler.END
+
+
+async def cancel(update: Update, context: CallbackContext) -> int:
+    """Cancels and ends the conversation."""
+    user = update.message.from_user
+    logger.info("User %s canceled the conversation.", user.first_name)
+    await update.message.reply_text(
+        "Bye! I hope we can talk again some day.", reply_markup=ReplyKeyboardRemove()
+    )
+
+    return ConversationHandler.END
+
+
+def conversation_handler(update_checker) -> ConversationHandler:
+    return ConversationHandler(
+        entry_points=[CommandHandler("start", start)],
+        states={
+            SEARCH_TYPE: [
+                MessageHandler(
+                    filters.Regex("^(FOR_BUY|FOR_RENT)$"), store_search_type_ask_budget
+                )
+            ],
+            BUDGET: [MessageHandler(filters.Regex(r"\d+"), store_budget_ask_location)],
+            LOCATION: [
+                MessageHandler(filters.Regex(r"\d+"), store_location_ask_nr_rooms)
+            ],
+            NR_ROOMS: [
+                MessageHandler(
+                    filters.Regex(r"\d+"),
+                    lambda update, context: close(update, context, update_checker),
+                )
+            ],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+        conversation_timeout=config.CONVERSATION_TIMEOUT,
+    )
+
+
+def main() -> None:
+    """Run the bot."""
+    # Create the Application and pass it your bot's token.
+    application = Application.builder().token(config.CHATBOT_TOKEN).build()
+
+    # Add conversation handler with the states SEARCH_TYPE, BUDGET, LOCATION AND NR_ROOMS
+    conv_handler = conversation_handler()
+
+    application.add_handler(conv_handler)
+
+    # Run the bot until the user presses Ctrl-C
+    application.run_polling(allowed_updates=Update.ALL_TYPES)
+
+
+if __name__ == "__main__":
+    main()
