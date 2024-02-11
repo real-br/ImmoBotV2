@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 class VastgoedScraper(ABC):
 
     @abstractmethod
-    def get_current_listings(context):
+    def get_current_listings(user_id):
         pass
 
     @abstractmethod
