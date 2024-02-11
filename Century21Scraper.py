@@ -30,7 +30,6 @@ class Century21Scraper(VastgoedScraper):
         # requirements = 'eyJib29sIjp7ImZpbHRlciI6eyJib29sIjp7Im11c3QiOlt7Im1hdGNoIjp7ImFnZW5jeUlkLmtleXdvcmQiOiJObHFCYUhRQlh0LW5KVG5PWWFXdSJ9fSx7Im1hdGNoIjp7Imxpc3RpbmdUeXBlIjoiRk9SX1JFTlQifX0seyJyYW5nZSI6eyJyb29tcy5udW1iZXJPZkJlZHJvb21zIjp7Imd0ZSI6M319fSx7ImJvb2wiOnsic2hvdWxkIjp7Im1hdGNoIjp7InR5cGUiOiJBUEFSVE1FTlQifX19fSx7InJhbmdlIjp7ImNyZWF0aW9uRGF0ZSI6eyJsdGUiOiIyMDIyLTA5LTI3VDE5OjQwOjE0Ljg4NloifX19XX19fX0='
         url = f"https://api.prd.cloud.century21.be/api/v2/properties?facets=elevator,condition,floorNumber,garden,habitableSurfaceArea,listingType,numberOfBedrooms,parking,price,subType,surfaceAreaGarden,swimmingPool,terrace,totalSurfaceArea,type&filter={requirements}&pageSize=36&sort=-creationDate"
         response = requests.get(url).json()
-        breakpoint()
         # return "\n".join([Century21Scraper.get_url(l) for l in response['data']])
         # print("\n".join([Century21Scraper.get_listing_img_url(l) for l in response['data']]))
 
