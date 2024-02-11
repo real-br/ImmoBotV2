@@ -1,32 +1,26 @@
-import os
 from VastgoedScraper import VastgoedScraper
 import requests
 import sqlite3
-from telegram.ext import (
-    CallbackContext,
-)
-from sqlite import get_saved_listings
+from sqlite import get_saved_listings, get_table_data
 
 
 class JamScraper(VastgoedScraper):
 
-    def get_current_listings(context: CallbackContext):
+    def get_current_listings(user_id):
+
+        search_data = get_table_data(
+            db_name="user_data.sqlite", table_name="user_data", user_id=user_id
+        )
 
         attribute_mapping = {"RENT": "FOR_RENT", "BUY": "FOR_SALE"}
 
         payload = {
             "needImages": 1,
-            "media_type_id": 1,
-            "map": None,
             "langue": "en",
-            "order": "createdDateTime",
-            "order_direction": -1,
-            "purpose": attribute_mapping.get(context.user_data.get("search_type")),
+            "purpose": attribute_mapping.get(search_data.get("search_type")),
             "limit": 99999,
             "deleted": 0,
-            "no_cache": "2024-02-11T10:35:34.251Z",
-            "price_max": str(context.user_data.get("budget")),
-            "price_min": "250001",
+            "price_max": str(search_data.get("budget")),
         }
 
         headers = {
@@ -41,12 +35,12 @@ class JamScraper(VastgoedScraper):
 
         return response["Result"]
 
-    def store_and_return_new_listings(listings, context):
+    def store_and_return_new_listings(listings, user_id):
 
         con = sqlite3.connect("jam.sqlite")
         cur = con.cursor()
 
-        saved_listing_ids = get_saved_listings("jam.sqlite", "jam")
+        saved_listing_ids = get_saved_listings("jam.sqlite", "jam", user_id)
 
         new_ids = []
         for listing in listings:
@@ -65,7 +59,7 @@ class JamScraper(VastgoedScraper):
                 )
 
                 cur.execute(
-                    "INSERT INTO jam VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO jam VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (
                         id,
                         id_hash,
@@ -77,6 +71,7 @@ class JamScraper(VastgoedScraper):
                         epc,
                         picture_url,
                         listing_url,
+                        user_id,
                     ),
                 )
 
