@@ -1,4 +1,4 @@
-from VastgoedScraper import VastgoedScraper
+from scrapers.VastgoedScraper import VastgoedScraper
 import requests
 import sqlite3
 from sqlite import get_saved_listings, get_table_data

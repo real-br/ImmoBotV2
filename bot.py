@@ -9,13 +9,13 @@
 
 
 import logging
-from VastgoedScraper import VastgoedScraper
-from Century21Scraper import Century21Scraper
+from scrapers.VastgoedScraper import VastgoedScraper
+from scrapers.Century21Scraper import Century21Scraper
 
 # from EraScraper import EraScraper -> no longer working
 
-from LecobelScraper import LecobelScraper
-from JamScraper import JamScraper
+from scrapers.LecobelScraper import LecobelScraper
+from scrapers.JamScraper import JamScraper
 
 from interaction import (
     conversation_handler,

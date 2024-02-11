@@ -1,5 +1,5 @@
-from VastgoedScraper import VastgoedScraper
-import config
+from scrapers.VastgoedScraper import VastgoedScraper
+
 import base64
 import requests
 import json

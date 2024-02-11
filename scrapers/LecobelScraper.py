@@ -1,5 +1,5 @@
 from distutils.command.config import config
-from VastgoedScraper import VastgoedScraper
+from scrapers.VastgoedScraper import VastgoedScraper
 from bs4 import BeautifulSoup
 import requests
 import regex as re

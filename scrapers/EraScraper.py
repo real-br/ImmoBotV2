@@ -1,4 +1,4 @@
-from VastgoedScraper import VastgoedScraper
+from scrapers.VastgoedScraper import VastgoedScraper
 import config
 
 from bs4 import BeautifulSoup
