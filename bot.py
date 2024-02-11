@@ -26,10 +26,10 @@ import glob
 from telegram import Update
 from telegram.ext import (
     Application,
-    CallbackContext,
 )
 from telegram.error import BadRequest
-from sqlite import get_listing_info_for_message
+from sqlite import get_listing_info_for_message, get_user_ids
+import asyncio
 
 
 # Enable logging
@@ -46,7 +46,7 @@ if TOKEN == None:
     )
     exit(1)
 
-scrapers = [JamScraper, Century21Scraper, LecobelScraper]
+scrapers = [JamScraper]
 
 STATES_VASTGOED = 0
 
@@ -70,36 +70,47 @@ def generate_saved_listing_response_from_db(immo_name, listing):
     return caption, img_url
 
 
-async def update_checker(context: CallbackContext):
+async def update_checker(application: Application, user_ids: list):
     scraper: VastgoedScraper
     for scraper in scrapers:
-        immmo_name = scraper.get_scraper_name()
-        current_listings = scraper.get_current_listings(context)
-        new_listings = scraper.store_and_return_new_listings(current_listings, context)
-        print(len(new_listings), "new listings")
-        for new_listing in new_listings:
-            if scraper.get_scraper_name() == "JAM Properties":
-                listing_caption, listing_photo_url = (
-                    generate_saved_listing_response_from_db(immmo_name, new_listing)
-                )
-
-            else:
-                listing_caption, listing_photo_url = generate_saved_listing_response(
-                    immmo_name, new_listing
-                )
-
+        for user_id in user_ids:
+            immmo_name = scraper.get_scraper_name()
+            current_listings = scraper.get_current_listings(user_id)
+            new_listings = scraper.store_and_return_new_listings(
+                current_listings, user_id
+            )
             try:
-                await context.bot.send_photo(
-                    chat_id=config.OWN_CHAT_ID,
-                    photo=listing_photo_url,
-                    caption="*NIEUW*\n" + listing_caption,
-                    parse_mode="Markdown",
-                )
-            except BadRequest as e:
-                await context.bot.send_message(
-                    chat_id=config.OWN_CHAT_ID,
-                    text="*NIEUW*\n" + listing_caption,
-                    parse_mode="Markdown",
+                print(len(new_listings), "new listings")
+                for new_listing in new_listings:
+                    if scraper.get_scraper_name() == "JAM Properties":
+                        listing_caption, listing_photo_url = (
+                            generate_saved_listing_response_from_db(
+                                immmo_name, new_listing
+                            )
+                        )
+
+                    else:
+                        listing_caption, listing_photo_url = (
+                            generate_saved_listing_response(immmo_name, new_listing)
+                        )
+
+                    try:
+                        await application.bot.send_photo(
+                            chat_id=user_id,
+                            photo=listing_photo_url,
+                            caption="*NIEUW*\n" + listing_caption,
+                            parse_mode="Markdown",
+                        )
+                    except BadRequest as e:
+                        await application.bot.send_message(
+                            chat_id=user_id,
+                            text="*NIEUW*\n" + listing_caption,
+                            parse_mode="Markdown",
+                        )
+            except Exception as e:
+                print(
+                    "Failed because there are {}".format(len(new_listings))
+                    + " new listings"
                 )
 
 
@@ -108,10 +119,18 @@ def main():
     # Create the Application and pass it your bot's token.
     application = Application.builder().token(TOKEN).build()
 
-    conv_handler = conversation_handler(update_checker)
+    user_ids = get_user_ids("user_data.sqlite", "user_data")
+
+    conv_handler = conversation_handler(
+        asyncio.ensure_future(update_checker(application, user_ids))
+    )
+
     application.add_handler(conv_handler)
 
-    application.job_queue.run_repeating(update_checker, interval=config.UPDATE_PERIOD)
+    application.job_queue.run_repeating(
+        lambda _: asyncio.ensure_future(update_checker(application, user_ids)),
+        interval=config.UPDATE_PERIOD,
+    )
 
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
