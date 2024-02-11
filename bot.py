@@ -15,6 +15,7 @@ from Century21Scraper import Century21Scraper
 # from EraScraper import EraScraper -> no longer working
 
 from LecobelScraper import LecobelScraper
+from JamScraper import JamScraper
 
 from interaction import (
     conversation_handler,
@@ -28,6 +29,7 @@ from telegram.ext import (
     CallbackContext,
 )
 from telegram.error import BadRequest
+from sqlite import get_listing_info_for_message
 
 
 # Enable logging
@@ -44,36 +46,9 @@ if TOKEN == None:
     )
     exit(1)
 
-scrapers = [LecobelScraper, Century21Scraper]
+scrapers = [JamScraper, Century21Scraper, LecobelScraper]
 
 STATES_VASTGOED = 0
-
-
-# Define a few command handlers. These usually take the two arguments update and
-# context. Error handlers also receive the raised TelegramError object in error.
-def vastgoed(update: Update, context: CallbackContext) -> None:
-    # print(update._effective_chat.id)
-    # update.message.reply_text("Immokantoor:",reply_markup=ReplyKeyboardMarkup(
-    #         [[scraper.get_scraper_name() for scraper in scrapers]], one_time_keyboard=True))
-
-    # return STATES_VASTGOED
-    for scraper in scrapers:
-        for listing in scraper.get_saved_listings():
-            caption, img = generate_saved_listing_response(
-                scraper.get_scraper_name(), listing
-            )
-            # context.bot.send_photo(chat_id=OWN_CHAT_ID, photo=img, caption=caption, parse_mode='Markdown')
-            try:
-                context.bot.send_photo(
-                    chat_id=config.OWN_CHAT_ID,
-                    photo=img,
-                    caption=caption,
-                    parse_mode="Markdown",
-                )
-            except BadRequest as e:
-                context.bot.send_message(
-                    chat_id=config.OWN_CHAT_ID, text=caption, parse_mode="Markdown"
-                )
 
 
 def generate_saved_listing_response(immo_name, listing):
@@ -84,17 +59,34 @@ def generate_saved_listing_response(immo_name, listing):
     return caption, img_url
 
 
+def generate_saved_listing_response_from_db(immo_name, listing):
+
+    listing_info = get_listing_info_for_message(listing, "jam.sqlite", "jam")
+
+    price = listing_info["price"]
+    price = f"€{price}" if price is not None else "-"
+    caption = f"🌐 [{immo_name.capitalize()}]({listing_info['listing_url']})\n🏠 {listing_info['address']}\n💰 {price}"
+    img_url = listing_info["picture_url"]
+    return caption, img_url
+
+
 async def update_checker(context: CallbackContext):
     scraper: VastgoedScraper
     for scraper in scrapers:
         immmo_name = scraper.get_scraper_name()
         current_listings = scraper.get_current_listings(context)
-        new_listings = scraper.store_and_return_new_listings(current_listings)
+        new_listings = scraper.store_and_return_new_listings(current_listings, context)
         print(len(new_listings), "new listings")
         for new_listing in new_listings:
-            listing_caption, listing_photo_url = generate_saved_listing_response(
-                immmo_name, new_listing
-            )
+            if scraper.get_scraper_name() == "JAM Properties":
+                listing_caption, listing_photo_url = (
+                    generate_saved_listing_response_from_db(immmo_name, new_listing)
+                )
+
+            else:
+                listing_caption, listing_photo_url = generate_saved_listing_response(
+                    immmo_name, new_listing
+                )
 
             try:
                 await context.bot.send_photo(
