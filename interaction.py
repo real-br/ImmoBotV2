@@ -5,6 +5,7 @@ from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import (
     Application,
     CommandHandler,
+    CallbackContext,
     ConversationHandler,
     MessageHandler,
     filters,
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 SEARCH_TYPE, BUDGET, LOCATION, NR_ROOMS = range(4)
 
 
-async def start(update: Update) -> int:
+async def start(update: Update, context: CallbackContext) -> int:
     """Starts the conversation and asks the user input."""
     reply_keyboard = [["BUY", "RENT"]]
 
@@ -43,7 +44,7 @@ async def start(update: Update) -> int:
     return SEARCH_TYPE
 
 
-async def store_search_type_ask_budget(update: Update) -> int:
+async def store_search_type_ask_budget(update: Update, context: CallbackContext) -> int:
     """Stores the selected search type and asks for max price."""
     user = update.message.from_user
     user_full_name = update.message.from_user.full_name
@@ -62,7 +63,7 @@ async def store_search_type_ask_budget(update: Update) -> int:
     return BUDGET
 
 
-async def store_budget_ask_location(update: Update) -> int:
+async def store_budget_ask_location(update: Update, context: CallbackContext) -> int:
     """Stores the budget and asks for a location."""
     user = update.message.from_user
     budget = int(update.message.text)
@@ -78,7 +79,7 @@ async def store_budget_ask_location(update: Update) -> int:
     return LOCATION
 
 
-async def store_location_ask_nr_rooms(update: Update) -> int:
+async def store_location_ask_nr_rooms(update: Update, context: CallbackContext) -> int:
     """Stores the location and asks nr of rooms."""
     user = update.message.from_user
     location = update.message.text
@@ -93,7 +94,7 @@ async def store_location_ask_nr_rooms(update: Update) -> int:
     return NR_ROOMS
 
 
-async def close(update: Update, update_checker, user_ids) -> int:
+async def close(update: Update, context: CallbackContext, update_checker) -> int:
     """Stores the NR rooms and ends the conversation."""
     user = update.message.from_user
     nr_rooms = int(update.message.text)
@@ -102,7 +103,7 @@ async def close(update: Update, update_checker, user_ids) -> int:
 
     logger.info("Nr rooms of %s: %s", user.first_name, nr_rooms)
 
-    await update_checker(user_ids)
+    await update_checker
 
     await update.message.reply_text(
         "Great, here is what I found already. If I find anything new, I'll let you know.",
@@ -112,7 +113,7 @@ async def close(update: Update, update_checker, user_ids) -> int:
     return ConversationHandler.END
 
 
-async def cancel(update: Update) -> int:
+async def cancel(update: Update, context: CallbackContext) -> int:
     """Cancels and ends the conversation."""
     user = update.message.from_user
     logger.info("User %s canceled the conversation.", user.first_name)
@@ -139,7 +140,7 @@ def conversation_handler(update_checker) -> ConversationHandler:
             NR_ROOMS: [
                 MessageHandler(
                     filters.Regex(r"\d+"),
-                    lambda update: close(update, update_checker),
+                    lambda update, context: close(update, context, update_checker),
                 )
             ],
         },
