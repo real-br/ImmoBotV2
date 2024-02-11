@@ -18,7 +18,7 @@ class LecobelScraper(VastgoedScraper):
     def get_current_listings(context: CallbackContext):
 
         attribute_mapping = {
-            "FOR_RENT": "renting",
+            "RENT": "renting",
         }
 
         html = requests.get(

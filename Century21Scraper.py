@@ -13,11 +13,14 @@ from telegram.ext import (
 
 class Century21Scraper(VastgoedScraper):
     def get_current_listings(context: CallbackContext):
+        attribute_mapping = {
+            "RENT": "FOR_RENT",
+        }
         # requirements = base64.b64encode(b'{"bool":{"filter":{"bool":{"must":[{"match":{"agencyId.keyword":"NlqBaHQBXt-nJTnOYaWu"}},{"match":{"listingType":"FOR_RENT"}},{"range":{"rooms.numberOfBedrooms":{"gte":3}}},{"bool":{"should":{"match":{"type":"APARTMENT"}}}},{"range":{"creationDate":{"lte":"2022-09-27T19:40:14.886Z"}}}]}}}}').decode('utf-8')
         requirements = base64.b64encode(
             '{{"bool":{{"filter":{{"bool":{{"must":[{{"bool":{{"should":[{{"match":{{"address.postalCode":"{location}"}}}}]}}}},{{"match":{{"listingType":"{search_type}"}}}},{{"range":{{"rooms.numberOfBedrooms":{{"gte":"{nr_rooms}"}}}}}}]}}}}}}}}'.format(
                 location=context.user_data.get("location"),
-                search_type=context.user_data.get("search_type"),
+                search_type=attribute_mapping.get(context.user_data.get("search_type")),
                 nr_rooms=context.user_data.get("nr_rooms"),
             ).encode(
                 "utf-8"

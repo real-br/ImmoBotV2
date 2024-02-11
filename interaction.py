@@ -40,7 +40,7 @@ SEARCH_TYPE, BUDGET, LOCATION, NR_ROOMS = range(4)
 
 async def start(update: Update, context: CallbackContext) -> int:
     """Starts the conversation and asks the user input."""
-    reply_keyboard = [["FOR_BUY", "FOR_RENT"]]
+    reply_keyboard = [["BUY", "RENT"]]
 
     await update.message.reply_text(
         "Hi! My name is Omen, here to save your precious time.\n"
@@ -59,8 +59,13 @@ async def start(update: Update, context: CallbackContext) -> int:
 async def store_search_type_ask_budget(update: Update, context: CallbackContext) -> int:
     """Stores the selected search type and asks for max price."""
     user = update.message.from_user
+    user_full_name = update.message.from_user.full_name
+    user_id = update.message.from_user.id
     search_type = update.message.text
     logger.info("Search Type of %s: %s", user.first_name, search_type)
+
+    context.user_data["id"] = user_id
+    context.user_data["full_name"] = user_full_name
     context.user_data["search_type"] = search_type
     await update.message.reply_text(
         "Got it! What is your maximum budget for this search?",
@@ -77,8 +82,7 @@ async def store_budget_ask_location(update: Update, context: CallbackContext) ->
     context.user_data["budget"] = budget
     logger.info("Budget of %s: %s", user.first_name, budget)
     await update.message.reply_text(
-        "Perfect, I am confident we can find at least something in BXL NORD for this price!\n"
-        "Or quickly share your preferred postal codes now.",
+        "Perfect, quickly share your preferred postal code now.",
         reply_markup=ReplyKeyboardRemove(),
     )
 
@@ -92,7 +96,7 @@ async def store_location_ask_nr_rooms(update: Update, context: CallbackContext) 
     context.user_data["location"] = location
     logger.info("Location of %s: %s", user.first_name, location)
     await update.message.reply_text(
-        "And what number of rooms are you looking for?",
+        "And the number of rooms you are looking for?",
         reply_markup=ReplyKeyboardRemove(),
     )
     return NR_ROOMS
@@ -108,7 +112,8 @@ async def close(update: Update, context: CallbackContext, update_checker) -> int
     await update_checker(context)
 
     await update.message.reply_text(
-        "Great, I'll keep you posted.", reply_markup=ReplyKeyboardRemove()
+        "Great, here is what I found already. If I find anything new, I'll let you know.",
+        reply_markup=ReplyKeyboardRemove(),
     )
 
     return ConversationHandler.END
@@ -131,7 +136,7 @@ def conversation_handler(update_checker) -> ConversationHandler:
         states={
             SEARCH_TYPE: [
                 MessageHandler(
-                    filters.Regex("^(FOR_BUY|FOR_RENT)$"), store_search_type_ask_budget
+                    filters.Regex("^(BUY|RENT)$"), store_search_type_ask_budget
                 )
             ],
             BUDGET: [MessageHandler(filters.Regex(r"\d+"), store_budget_ask_location)],
