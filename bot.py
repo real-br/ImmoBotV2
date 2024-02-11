@@ -61,7 +61,7 @@ def generate_saved_listing_response(immo_name, listing):
 
 def generate_saved_listing_response_from_db(immo_name, listing):
 
-    listing_info = get_listing_info_for_message(listing, "jam.sqlite", "jam")
+    listing_info = get_listing_info_for_message(listing, "databases/jam.sqlite", "jam")
 
     price = listing_info["price"]
     price = f"€{price}" if price is not None else "-"
@@ -119,7 +119,7 @@ def main():
     # Create the Application and pass it your bot's token.
     application = Application.builder().token(TOKEN).build()
 
-    user_ids = get_user_ids("user_data.sqlite", "user_data")
+    user_ids = get_user_ids("databases/user_data.sqlite", "user_data")
 
     conv_handler = conversation_handler(
         asyncio.ensure_future(update_checker(application, user_ids))

@@ -37,7 +37,7 @@ def get_listing_info_for_message(listing_id, db_name, table_name):
 
 
 def store_data(user_id, column_name, column_value):
-    conn = sqlite3.connect("user_data.sqlite")
+    conn = sqlite3.connect("databases/user_data.sqlite")
     cursor = conn.cursor()
 
     # Check if the user_id already exists

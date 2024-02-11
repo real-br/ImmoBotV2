@@ -9,7 +9,9 @@ class JamScraper(VastgoedScraper):
     def get_current_listings(user_id):
 
         search_data = get_table_data(
-            db_name="user_data.sqlite", table_name="user_data", user_id=user_id
+            db_name="databases/user_data.sqlite",
+            table_name="user_data",
+            user_id=user_id,
         )
 
         attribute_mapping = {"RENT": "FOR_RENT", "BUY": "FOR_SALE"}
@@ -37,10 +39,10 @@ class JamScraper(VastgoedScraper):
 
     def store_and_return_new_listings(listings, user_id):
 
-        con = sqlite3.connect("jam.sqlite")
+        con = sqlite3.connect("databases/jam.sqlite")
         cur = con.cursor()
 
-        saved_listing_ids = get_saved_listings("jam.sqlite", "jam", user_id)
+        saved_listing_ids = get_saved_listings("databases/jam.sqlite", "jam", user_id)
 
         new_ids = []
         for listing in listings:
