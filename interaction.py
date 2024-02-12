@@ -72,7 +72,7 @@ async def store_budget_ask_location(update: Update, context: CallbackContext) ->
 
     logger.info("Budget of %s: %s", user.first_name, budget)
     await update.message.reply_text(
-        "Perfect, quickly share your preferred postal code now.",
+        "Perfect, quickly share your preferred postal codes now, separated by a comma.",
         reply_markup=ReplyKeyboardRemove(),
     )
 

@@ -23,6 +23,7 @@ class JamScraper(VastgoedScraper):
             "limit": 99999,
             "deleted": 0,
             "price_max": str(search_data.get("budget")),
+            "media_beds": str(search_data.get("nr_rooms")),
         }
 
         headers = {
@@ -39,6 +40,12 @@ class JamScraper(VastgoedScraper):
 
     def store_and_return_new_listings(listings, user_id):
 
+        search_data = get_table_data(
+            db_name="databases/user_data.sqlite",
+            table_name="user_data",
+            user_id=user_id,
+        )
+
         con = sqlite3.connect("databases/jam.sqlite")
         cur = con.cursor()
 
@@ -46,7 +53,9 @@ class JamScraper(VastgoedScraper):
 
         new_ids = []
         for listing in listings:
-            if listing.get("id") not in saved_listing_ids:
+            if (listing.get("id") not in saved_listing_ids) & (
+                listing.get("zip") in search_data.get("location")
+            ):
                 id = listing.get("id", None)
                 id_hash = listing.get("_id", None)
                 category = listing.get("category", None)
