@@ -139,24 +139,24 @@ def conversation_handler(update_checker) -> ConversationHandler:
     return ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            SEARCH_TYPE: [
-                MessageHandler(
-                    filters.Regex("^(BUY|RENT)$"), store_search_type_ask_budget
-                )
+            SEARCH_TYPE: [MessageHandler(store_search_type_ask_budget)],
+            BUDGET: [
+                MessageHandler(store_budget_ask_location),
             ],
-            BUDGET: [MessageHandler(filters.Regex(r"\d+"), store_budget_ask_location)],
             LOCATION: [
-                MessageHandler(filters.Regex(r"\d+"), store_location_ask_nr_rooms)
+                MessageHandler(store_location_ask_nr_rooms),
             ],
             NR_ROOMS: [
                 MessageHandler(
-                    filters.Regex(r"\d+"),
                     lambda update, context: close(update, context, update_checker),
-                )
+                ),
             ],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
         conversation_timeout=config.CONVERSATION_TIMEOUT,
+        persistent=True,
+        allow_reentry=True,
+        callback_query_reentry=True,
     )
 
 
