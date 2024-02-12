@@ -71,12 +71,14 @@ async def store_budget_ask_location(update: Update, context: CallbackContext) ->
         budget = int(update.message.text)
         store_data(user.id, "budget", budget)
         logger.info("Budget of %s: %s", user.first_name, budget)
-        update.message.reply_text(
+        await update.message.reply_text(
             "Got it!  quickly share your preferred postal code now."
         )
         return LOCATION
     except ValueError:
-        update.message.reply_text("Invalid input. Please enter a valid numeric budget.")
+        await update.message.reply_text(
+            "Invalid input. Please enter a valid numeric budget."
+        )
         return BUDGET
 
 
@@ -88,13 +90,13 @@ async def store_location_ask_nr_rooms(update: Update, context: CallbackContext) 
         location = int(update.message.text)
         store_data(user.id, "location", location)
         logger.info("Location of %s: %s", user.first_name, location)
-        update.message.reply_text(
+        await update.message.reply_text(
             "And the number of rooms you are looking for?",
             reply_markup=ReplyKeyboardRemove(),
         )
         return NR_ROOMS
     except:
-        update.message.reply_text(
+        await update.message.reply_text(
             "Invalid input. Please enter a valid numeric location."
         )
         return LOCATION
@@ -109,7 +111,7 @@ async def close(update: Update, context: CallbackContext, update_checker) -> int
         store_data(user.id, "nr_rooms", nr_rooms)
         logger.info("Nr rooms of %s: %s", user.first_name, nr_rooms)
 
-        update.message.reply_text(
+        await update.message.reply_text(
             "Great, here is what I found already. If I find anything new, I'll let you know.",
             reply_markup=ReplyKeyboardRemove(),
         )
@@ -117,7 +119,7 @@ async def close(update: Update, context: CallbackContext, update_checker) -> int
         await update_checker
         return ConversationHandler.END
     except:
-        update.message.reply_text(
+        await update.message.reply_text(
             "Invalid input. Please enter a valid numeric location."
         )
         return NR_ROOMS
