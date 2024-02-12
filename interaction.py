@@ -66,61 +66,51 @@ async def store_search_type_ask_budget(update: Update, context: CallbackContext)
 async def store_budget_ask_location(update: Update, context: CallbackContext) -> int:
     """Stores the budget and asks for a location."""
     user = update.message.from_user
+    budget = int(update.message.text)
 
-    try:
-        budget = int(update.message.text)
-        store_data(user.id, "budget", budget)
-        logger.info("Budget of %s: %s", user.first_name, budget)
-        update.message.reply_text(
-            "Got it!  quickly share your preferred postal code now."
-        )
-        return LOCATION
-    except ValueError:
-        update.message.reply_text("Invalid input. Please enter a valid numeric budget.")
-        return BUDGET
+    store_data(update.message.from_user.id, "budget", budget)
+
+    logger.info("Budget of %s: %s", user.first_name, budget)
+    await update.message.reply_text(
+        "Perfect, quickly share your preferred postal code now.",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+
+    return LOCATION
 
 
 async def store_location_ask_nr_rooms(update: Update, context: CallbackContext) -> int:
     """Stores the location and asks nr of rooms."""
     user = update.message.from_user
+    location = update.message.text
 
-    try:
-        location = int(update.message.text)
-        store_data(user.id, "location", location)
-        logger.info("Location of %s: %s", user.first_name, location)
-        update.message.reply_text(
-            "And the number of rooms you are looking for?",
-            reply_markup=ReplyKeyboardRemove(),
-        )
-        return NR_ROOMS
-    except:
-        update.message.reply_text(
-            "Invalid input. Please enter a valid numeric location."
-        )
-        return LOCATION
+    store_data(update.message.from_user.id, "location", location)
+
+    logger.info("Location of %s: %s", user.first_name, location)
+    await update.message.reply_text(
+        "And the number of rooms you are looking for?",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    return NR_ROOMS
 
 
 async def close(update: Update, context: CallbackContext, update_checker) -> int:
     """Stores the NR rooms and ends the conversation."""
     user = update.message.from_user
+    nr_rooms = int(update.message.text)
 
-    try:
-        nr_rooms = int(update.message.text)
-        store_data(user.id, "nr_rooms", nr_rooms)
-        logger.info("Nr rooms of %s: %s", user.first_name, nr_rooms)
+    store_data(update.message.from_user.id, "nr_rooms", nr_rooms)
 
-        update.message.reply_text(
-            "Great, here is what I found already. If I find anything new, I'll let you know.",
-            reply_markup=ReplyKeyboardRemove(),
-        )
+    logger.info("Nr rooms of %s: %s", user.first_name, nr_rooms)
 
-        await update_checker
-        return ConversationHandler.END
-    except:
-        update.message.reply_text(
-            "Invalid input. Please enter a valid numeric location."
-        )
-        return NR_ROOMS
+    await update_checker
+
+    await update.message.reply_text(
+        "Great, here is what I found already. If I find anything new, I'll let you know.",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+
+    return ConversationHandler.END
 
 
 async def cancel(update: Update, context: CallbackContext) -> int:
@@ -135,28 +125,27 @@ async def cancel(update: Update, context: CallbackContext) -> int:
 
 
 def conversation_handler(update_checker) -> ConversationHandler:
-
     return ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            SEARCH_TYPE: [MessageHandler(store_search_type_ask_budget)],
-            BUDGET: [
-                MessageHandler(store_budget_ask_location),
+            SEARCH_TYPE: [
+                MessageHandler(
+                    filters.Regex("^(BUY|RENT)$"), store_search_type_ask_budget
+                )
             ],
+            BUDGET: [MessageHandler(filters.Regex(r"\d+"), store_budget_ask_location)],
             LOCATION: [
-                MessageHandler(store_location_ask_nr_rooms),
+                MessageHandler(filters.Regex(r"\d+"), store_location_ask_nr_rooms)
             ],
             NR_ROOMS: [
                 MessageHandler(
+                    filters.Regex(r"\d+"),
                     lambda update, context: close(update, context, update_checker),
-                ),
+                )
             ],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
         conversation_timeout=config.CONVERSATION_TIMEOUT,
-        persistent=True,
-        allow_reentry=True,
-        callback_query_reentry=True,
     )
 
 
