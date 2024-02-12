@@ -65,7 +65,7 @@ def generate_saved_listing_response_from_db(immo_name, listing):
 
     price = listing_info["price"]
     price = f"€{price}" if price is not None else "-"
-    caption = f"🌐 [{immo_name.capitalize()}]({listing_info['listing_url']})\n🏠 {listing_info['address']}\n💰 {price}"
+    caption = f"🌐 [{immo_name.capitalize()}]({listing_info['listing_url']})\n🏠 {listing_info['address']}\n📍 {listing_info['zip']}\n💰 {price}"
     img_url = listing_info["picture_url"]
     return caption, img_url
 
