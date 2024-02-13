@@ -4,3 +4,4 @@ __pycache*
 *immobot*
 databases/jam.sqlite
 databases/user_data.sqlite
+*.out
