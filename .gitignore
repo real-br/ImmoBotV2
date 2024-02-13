@@ -2,4 +2,5 @@
 *.json
 __pycache*
 *immobot*
-*.sql*
+databases/jam.sqlite
+databases/user_data.sqlite
