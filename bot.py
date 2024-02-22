@@ -70,9 +70,9 @@ async def update_checker(application: Application, user_ids: list):
     scraper: VastgoedScraper
     for scraper in scrapers:
 
-        current_listings = {}
+        current_listings_immoweb = {}
         if scraper.get_scraper_name() == "Immoweb":
-            current_listings = scraper.get_current_listings()
+            current_listings_immoweb = scraper.get_current_listings()
 
         for user_id in user_ids:
             immmo_name = scraper.get_scraper_name()
@@ -81,8 +81,9 @@ async def update_checker(application: Application, user_ids: list):
             current_listings = (
                 scraper.get_current_listings(user_id)
                 if scraper.get_scraper_name() != "Immoweb"
-                else scraper.get_current_listings(user_id)
+                else current_listings_immoweb
             )
+
             new_listings = scraper.store_and_return_new_listings(
                 current_listings, user_id
             )

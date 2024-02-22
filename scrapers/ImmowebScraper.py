@@ -33,8 +33,8 @@ class ImmowebScraper(VastgoedScraper):
         listings_info = []
         for listing_type in listing_types:
             page_number = 1
-            while page_number <= 25:
-                print("Page {} / {}".format(page_number, 25))
+            while page_number <= 5:
+                print("Page {} / {}".format(page_number, 5))
                 main_url = "https://www.immoweb.be/nl/zoeken/huis-en-appartement/{}?countries=BE&page={}&orderBy=newest"
                 soup = self.get_souped_html(
                     driver,
@@ -148,8 +148,6 @@ class ImmowebScraper(VastgoedScraper):
             self.get_db_name(), self.get_listing_table_name(), user_id
         )
 
-        breakpoint()
-
         new_ids = []
         for listing in listings:
             if (
@@ -198,7 +196,6 @@ class ImmowebScraper(VastgoedScraper):
         con.commit()
         con.close()
 
-        breakpoint()
         return new_ids
 
     def get_scraper_name(self):
