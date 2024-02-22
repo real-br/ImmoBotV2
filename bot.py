@@ -50,7 +50,7 @@ if TOKEN == None:
 
 immoweb_instance = ImmowebScraper()
 
-scrapers = [immoweb_instance]
+scrapers = [JamScraper, immoweb_instance]
 
 STATES_VASTGOED = 0
 
