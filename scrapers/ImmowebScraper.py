@@ -131,6 +131,7 @@ class ImmowebScraper(VastgoedScraper):
 
                 page_number += 1
 
+        driver.quit()
         return listings_info
 
     def store_and_return_new_listings(self, listings, user_id):
