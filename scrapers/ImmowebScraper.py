@@ -23,27 +23,7 @@ class ImmowebScraper(VastgoedScraper):
         html = driver.page_source
         return BeautifulSoup(html, "html.parser")
 
-    def get_number_of_pages(self, soup_html: BeautifulSoup) -> int:
-
-        pagination_div = soup_html.find("div", {"class": "search-results__pagination"})
-        number_of_pages = 0
-        if pagination_div:
-            span_elements = pagination_div.find_all(
-                "span", {"class": "button__label", "aria-hidden": "true"}
-            )
-
-            if span_elements:
-                number_of_pages = int(span_elements[-1].text)
-            else:
-                print(
-                    "No matching <span> elements found within the pagination section."
-                )
-        else:
-            print("No <div class='search-results__pagination'> section found.")
-
-        return number_of_pages
-
-    def get_current_listings(self, user_id: str):
+    def get_current_listings(self):
 
         listing_types = ["te-huur", "te-koop"]
         attribute_mapping = {"te-huur": "FOR_RENT", "te-koop": "FOR_SALE"}
@@ -52,17 +32,9 @@ class ImmowebScraper(VastgoedScraper):
 
         listings_info = []
         for listing_type in listing_types:
-            url1 = "https://www.immoweb.be/nl/zoeken/huis-en-appartement/{}"
-            print(url1.format(listing_type))
-            number_of_pages = self.get_number_of_pages(
-                self.get_souped_html(
-                    driver,
-                    url1.format(listing_type),
-                )
-            )
             page_number = 1
-            while page_number <= 5:
-                print("Page {} / {}".format(page_number, number_of_pages))
+            while page_number <= 25:
+                print("Page {} / {}".format(page_number, 25))
                 main_url = "https://www.immoweb.be/nl/zoeken/huis-en-appartement/{}?countries=BE&page={}&orderBy=newest"
                 soup = self.get_souped_html(
                     driver,

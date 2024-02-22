@@ -50,7 +50,7 @@ if TOKEN == None:
 
 immoweb_instance = ImmowebScraper()
 
-scrapers = [JamScraper, immoweb_instance]
+scrapers = [immoweb_instance]
 
 STATES_VASTGOED = 0
 
@@ -69,11 +69,20 @@ def generate_saved_listing_response_from_db(db_name, table_name, immo_name, list
 async def update_checker(application: Application, user_ids: list):
     scraper: VastgoedScraper
     for scraper in scrapers:
+
+        current_listings = {}
+        if scraper.get_scraper_name() == "Immoweb":
+            current_listings = scraper.get_current_listings()
+
         for user_id in user_ids:
             immmo_name = scraper.get_scraper_name()
             db_name = scraper.get_db_name()
             listing_table_name = scraper.get_listing_table_name()
-            current_listings = scraper.get_current_listings(user_id)
+            current_listings = (
+                scraper.get_current_listings(user_id)
+                if scraper.get_scraper_name() != "Immoweb"
+                else scraper.get_current_listings(user_id)
+            )
             new_listings = scraper.store_and_return_new_listings(
                 current_listings, user_id
             )
