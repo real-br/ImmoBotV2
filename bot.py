@@ -8,14 +8,15 @@
 # https://github.com/python-telegram-bot/python-telegram-bot/
 
 
+import sys
+
+sys.path.append("ImmoBotV2")
+
 import logging
 from scrapers.VastgoedScraper import VastgoedScraper
-from scrapers.Century21Scraper import Century21Scraper
-
-# from EraScraper import EraScraper -> no longer working
-
-from scrapers.LecobelScraper import LecobelScraper
 from scrapers.JamScraper import JamScraper
+from scrapers.ImmowebScraper import ImmowebScraper
+
 
 from interaction import (
     conversation_handler,
@@ -46,22 +47,17 @@ if TOKEN == None:
     )
     exit(1)
 
-scrapers = [JamScraper]
+
+immoweb_instance = ImmowebScraper()
+
+scrapers = [JamScraper, immoweb_instance]
 
 STATES_VASTGOED = 0
 
 
-def generate_saved_listing_response(immo_name, listing):
-    price = listing["price"]
-    price = f"€{price}" if price is not None else "-"
-    caption = f"🌐 [{immo_name.capitalize()}]({listing['url']})\n🏠 {listing['address']}\n💰 {price}"
-    img_url = listing["img_url"]
-    return caption, img_url
+def generate_saved_listing_response_from_db(db_name, table_name, immo_name, listing):
 
-
-def generate_saved_listing_response_from_db(immo_name, listing):
-
-    listing_info = get_listing_info_for_message(listing, "databases/jam.sqlite", "jam")
+    listing_info = get_listing_info_for_message(listing, db_name, table_name)
 
     price = listing_info["price"]
     price = f"€{price}" if price is not None else "-"
@@ -75,6 +71,8 @@ async def update_checker(application: Application, user_ids: list):
     for scraper in scrapers:
         for user_id in user_ids:
             immmo_name = scraper.get_scraper_name()
+            db_name = scraper.get_db_name()
+            listing_table_name = scraper.get_listing_table_name()
             current_listings = scraper.get_current_listings(user_id)
             new_listings = scraper.store_and_return_new_listings(
                 current_listings, user_id
@@ -82,18 +80,11 @@ async def update_checker(application: Application, user_ids: list):
             try:
                 print(len(new_listings), "new listings")
                 for new_listing in new_listings:
-                    if scraper.get_scraper_name() == "JAM Properties":
-                        listing_caption, listing_photo_url = (
-                            generate_saved_listing_response_from_db(
-                                immmo_name, new_listing
-                            )
+                    listing_caption, listing_photo_url = (
+                        generate_saved_listing_response_from_db(
+                            db_name, listing_table_name, immmo_name, new_listing
                         )
-
-                    else:
-                        listing_caption, listing_photo_url = (
-                            generate_saved_listing_response(immmo_name, new_listing)
-                        )
-
+                    )
                     try:
                         await application.bot.send_photo(
                             chat_id=user_id,
