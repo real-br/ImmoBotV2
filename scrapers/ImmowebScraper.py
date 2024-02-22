@@ -26,15 +26,15 @@ class ImmowebScraper(VastgoedScraper):
     def get_current_listings(self):
 
         listing_types = ["te-huur", "te-koop"]
-        attribute_mapping = {"te-huur": "FOR_RENT", "te-koop": "FOR_SALE"}
+        attribute_mapping = {"te-huur": "RENT", "te-koop": "BUY"}
 
         driver = self.initialize_driver()
 
         listings_info = []
         for listing_type in listing_types:
             page_number = 1
-            while page_number <= 5:
-                print("Page {} / {}".format(page_number, 5))
+            while page_number <= 100:
+                print("Page {} / {}".format(page_number, 100))
                 main_url = "https://www.immoweb.be/nl/zoeken/huis-en-appartement/{}?countries=BE&page={}&orderBy=newest"
                 soup = self.get_souped_html(
                     driver,
@@ -158,6 +158,7 @@ class ImmowebScraper(VastgoedScraper):
                     (listing.get("nr_rooms") == -1)
                     | (listing.get("nr_rooms") >= search_data.get("nr_rooms"))
                 )
+                & (listing.get("listing_type") == search_data.get("search_type"))
             ):
                 id = listing.get("id", None)
                 id_hash = listing.get("id_hash", None)
