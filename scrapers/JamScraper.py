@@ -1,3 +1,7 @@
+# setting path
+import sys
+
+sys.path.append("../ImmoBotV2")
 from scrapers.VastgoedScraper import VastgoedScraper
 import requests
 import sqlite3
@@ -48,7 +52,6 @@ class JamScraper(VastgoedScraper):
 
         con = sqlite3.connect("databases/jam.sqlite")
         cur = con.cursor()
-
         saved_listing_ids = get_saved_listings("databases/jam.sqlite", "jam", user_id)
 
         new_ids = []
@@ -68,9 +71,11 @@ class JamScraper(VastgoedScraper):
                 listing_url = "https://www.jamproperties.be/en/for-sale/{category}/{city}/{id}".format(
                     category=category, city=city, id=id
                 )
+                nr_rooms = listing.get("roomCount", None)
+                listing_type = listing.get("purpose", None)
 
                 cur.execute(
-                    "INSERT INTO jam VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO jam VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (
                         id,
                         id_hash,
@@ -82,6 +87,8 @@ class JamScraper(VastgoedScraper):
                         epc,
                         picture_url,
                         listing_url,
+                        nr_rooms,
+                        listing_type,
                         user_id,
                     ),
                 )
@@ -96,10 +103,13 @@ class JamScraper(VastgoedScraper):
     def get_scraper_name():
         return "JAM Properties"
 
-    def get_datapath():
-        return ""
+    def get_db_name():
+        return "databases/jam.sqlite"
+
+    def get_listing_table_name():
+        return "jam"
 
 
 if __name__ == "__main__":
-    ls = JamScraper.get_current_listings()
-    JamScraper.store_and_return_new_listings(ls)
+    ls = JamScraper.get_current_listings(6123196363)
+    JamScraper.store_and_return_new_listings(ls, 6123196363)
