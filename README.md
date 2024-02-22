@@ -1,8 +1,9 @@
 # ImmoBotV2
+
 ## ToDo
 
 - [ ] Add filter on postal code for JAM properties
-- [ ] Migrate ERA scraper & Lecobel scraper to use db instead of json
-- [ ] Add more sources
-
-  
+- [ ] Align database structures
+- [ ] Add a date added field & type of listing (Buy / Rent) in db structure
+- [ ] Add the search filter option for Immoweb
+- [ ] Add differentiation buy / sell for Immoweb
