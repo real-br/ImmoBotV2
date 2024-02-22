@@ -7,3 +7,4 @@ databases/user_data.sqlite
 databases/immoweb.sqlite
 *.out
 playground.py
+*.sql
