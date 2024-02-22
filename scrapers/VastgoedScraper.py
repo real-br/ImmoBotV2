@@ -12,13 +12,13 @@ class VastgoedScraper(ABC):
         pass
 
     @abstractmethod
-    def get_saved_listings():
-        pass
-
-    @abstractmethod
     def get_scraper_name():
         pass
 
     @abstractmethod
-    def get_datapath():
+    def get_db_name(self):
+        pass
+
+    @abstractmethod
+    def get_listing_table_name(self):
         pass
