@@ -2,8 +2,9 @@
 
 ## ToDo
 
-- [ ] Add filter on postal code for JAM properties
-- [ ] Align database structures
 - [ ] Add a date added field & type of listing (Buy / Rent) in db structure
-- [ ] Add the search filter option for Immoweb
-- [ ] Add differentiation buy / sell for Immoweb
+- [ ] Migrate to pure requests instead of selenium
+- [ ] Refactor code to be more concise
+- [ ] Use more config instead of hardcoding
+- [ ] Add patreon link every 10 suggestions
+- [ ] Check if the code can be hosted online
