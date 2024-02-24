@@ -134,10 +134,10 @@ def main():
     )
     logger.info(f"update_checker scheduled to run every {config.UPDATE_PERIOD} seconds")
 
-    while True:
-        next_run_time = schedule.next_run()
-        logger.info(f"Next run time for update_checker: {next_run_time}")
+    next_run_time = schedule.next_run()
+    logger.info(f"Next run time for update_checker: {next_run_time}")
 
+    while True:
         schedule.run_pending()
         time.sleep(1)
 
