@@ -1,13 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# pylint: disable=W0613, C0116
-# type: ignore[union-attr]
-# This program is dedicated to the public domain under the CC0 license.
-
-
-# https://github.com/python-telegram-bot/python-telegram-bot/
-
-
 import sys
 
 sys.path.append("ImmoBotV2")
@@ -73,10 +63,6 @@ def main():
     )
     update_checker_thread.start()
     logger.info(f"update_checker scheduled to run every {config.UPDATE_PERIOD} seconds")
-
-    current_time = datetime.now()
-    next_run_time = current_time + timedelta(seconds=config.UPDATE_PERIOD)
-    logger.info(f"Next run time for update_checker: {next_run_time}")
 
     try:
         application.run_polling(allowed_updates=Update.ALL_TYPES)
@@ -148,6 +134,11 @@ def update_checker(application, user_ids):
     try:
         while True:
             update_checker_logic(application, user_ids)
+            current_time = datetime.now()
+            next_run_time = current_time + timedelta(seconds=config.UPDATE_PERIOD)
+            logger.info(
+                f"Running at {current_time}, next run time for update_checker: {next_run_time}"
+            )
             time.sleep(config.UPDATE_PERIOD)
     except Exception as e:
         print(f"Error in update_checker: {e}")
