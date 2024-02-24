@@ -32,12 +32,11 @@ from telegram.ext import (
 )
 from telegram.error import BadRequest
 from sqlite import get_listing_info_for_message, get_user_ids
-import asyncio
 
 
 # Enable logging
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.ERROR
 )
 
 logger = logging.getLogger(__name__)
@@ -71,7 +70,7 @@ def generate_saved_listing_response_from_db(db_name, table_name, immo_name, list
 def update_checker(application: Application, user_ids: list):
     scraper: VastgoedScraper
     for scraper in scrapers:
-
+        logger.info(f"Checking for new listings from {scraper.get_scraper_name()}")
         current_listings_immoweb = {}
         if scraper.get_scraper_name() == "Immoweb":
             current_listings_immoweb = scraper.get_current_listings()
@@ -90,7 +89,7 @@ def update_checker(application: Application, user_ids: list):
                 current_listings, user_id
             )
             try:
-                print(len(new_listings), "new listings")
+                logger.info(f"Found {len(new_listings)} new listings")
                 for new_listing in new_listings:
                     listing_caption, listing_photo_url = (
                         generate_saved_listing_response_from_db(
@@ -104,17 +103,17 @@ def update_checker(application: Application, user_ids: list):
                             caption="*NIEUW*\n" + listing_caption,
                             parse_mode="Markdown",
                         )
+                        logger.info("Sent new listing photo and caption")
                     except BadRequest as e:
                         application.bot.send_message(
                             chat_id=user_id,
                             text="*NIEUW*\n" + listing_caption,
                             parse_mode="Markdown",
                         )
+                        logger.info("Sent new listing caption (photo failed)")
             except Exception as e:
-                print(
-                    "Failed because there are {}".format(len(new_listings))
-                    + " new listings"
-                )
+                logger.error(f"Failed to process new listings. Error: {str(e)}")
+                logger.exception(e)
 
 
 def main():
@@ -133,6 +132,14 @@ def main():
     schedule.every(config.UPDATE_PERIOD).seconds.do(
         update_checker, application, user_ids
     )
+    logger.info(f"update_checker scheduled to run every {config.UPDATE_PERIOD} seconds")
+
+    while True:
+        next_run_time = schedule.next_run()
+        logger.info(f"Next run time for update_checker: {next_run_time}")
+
+        schedule.run_pending()
+        time.sleep(1)
 
 
 if __name__ == "__main__":
