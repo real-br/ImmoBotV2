@@ -4,6 +4,8 @@ from selenium.webdriver.firefox.options import Options as FirefoxOptions
 import sqlite3
 import sys
 import re
+import config
+
 
 sys.path.append("../ImmoBotV2")
 from sqlite import get_saved_listings, get_table_data
@@ -33,8 +35,8 @@ class ImmowebScraper(VastgoedScraper):
         listings_info = []
         for listing_type in listing_types:
             page_number = 1
-            while page_number <= 20:
-                print("Page {} / {}".format(page_number, 20))
+            while page_number <= config.PAGES_SCRAPED:
+                print("Page {} / {}".format(page_number, config.PAGES_SCRAPED))
                 main_url = "https://www.immoweb.be/nl/zoeken/huis-en-appartement/{}?countries=BE&page={}&orderBy=newest"
                 soup = self.get_souped_html(
                     driver,

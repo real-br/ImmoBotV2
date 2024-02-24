@@ -16,6 +16,8 @@ import logging
 from scrapers.VastgoedScraper import VastgoedScraper
 from scrapers.JamScraper import JamScraper
 from scrapers.ImmowebScraper import ImmowebScraper
+import schedule
+import time
 
 
 from interaction import (
@@ -66,7 +68,7 @@ def generate_saved_listing_response_from_db(db_name, table_name, immo_name, list
     return caption, img_url
 
 
-async def update_checker(application: Application, user_ids: list):
+def update_checker(application: Application, user_ids: list):
     scraper: VastgoedScraper
     for scraper in scrapers:
 
@@ -122,18 +124,15 @@ def main():
 
     user_ids = get_user_ids("databases/user_data.sqlite", "user_data")
 
-    conv_handler = conversation_handler(
-        asyncio.ensure_future(update_checker(application, user_ids))
-    )
+    conv_handler = conversation_handler()
 
     application.add_handler(conv_handler)
 
-    application.job_queue.run_repeating(
-        lambda _: asyncio.ensure_future(update_checker(application, user_ids)),
-        interval=config.UPDATE_PERIOD,
-    )
-
     application.run_polling(allowed_updates=Update.ALL_TYPES)
+
+    schedule.every(config.UPDATE_PERIOD).seconds.do(
+        update_checker, application, user_ids
+    )
 
 
 if __name__ == "__main__":

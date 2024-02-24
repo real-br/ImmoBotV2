@@ -94,7 +94,7 @@ async def store_location_ask_nr_rooms(update: Update, context: CallbackContext) 
     return NR_ROOMS
 
 
-async def close(update: Update, context: CallbackContext, update_checker) -> int:
+async def close(update: Update, context: CallbackContext) -> int:
     """Stores the NR rooms and ends the conversation."""
     user = update.message.from_user
     nr_rooms = int(update.message.text)
@@ -103,10 +103,8 @@ async def close(update: Update, context: CallbackContext, update_checker) -> int
 
     logger.info("Nr rooms of %s: %s", user.first_name, nr_rooms)
 
-    await update_checker
-
     await update.message.reply_text(
-        "Great, here is what I found already. If I find anything new, I'll let you know.",
+        "Great, I will start looking and when I find anything, I'll let you know.",
         reply_markup=ReplyKeyboardRemove(),
     )
 
@@ -124,7 +122,7 @@ async def cancel(update: Update, context: CallbackContext) -> int:
     return ConversationHandler.END
 
 
-def conversation_handler(update_checker) -> ConversationHandler:
+def conversation_handler() -> ConversationHandler:
     return ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
@@ -140,7 +138,7 @@ def conversation_handler(update_checker) -> ConversationHandler:
             NR_ROOMS: [
                 MessageHandler(
                     filters.Regex(r"\d+"),
-                    lambda update, context: close(update, context, update_checker),
+                    close,
                 )
             ],
         },
