@@ -18,7 +18,7 @@ from scrapers.JamScraper import JamScraper
 from scrapers.ImmowebScraper import ImmowebScraper
 import schedule
 import time
-
+import threading
 
 from interaction import (
     conversation_handler,
@@ -127,8 +127,6 @@ def main():
 
     application.add_handler(conv_handler)
 
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
-
     schedule.every(config.UPDATE_PERIOD).seconds.do(
         update_checker, application, user_ids
     )
@@ -136,6 +134,11 @@ def main():
 
     next_run_time = schedule.next_run()
     logger.info(f"Next run time for update_checker: {next_run_time}")
+
+    polling_thread = threading.Thread(
+        target=application.run_polling, kwargs={"allowed_updates": Update.ALL_TYPES}
+    )
+    polling_thread.start()
 
     while True:
         schedule.run_pending()
