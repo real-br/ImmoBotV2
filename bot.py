@@ -16,10 +16,10 @@ import logging
 from scrapers.VastgoedScraper import VastgoedScraper
 from scrapers.JamScraper import JamScraper
 from scrapers.ImmowebScraper import ImmowebScraper
-import schedule
 import time
 import threading
-import asyncio
+from datetime import datetime, timedelta
+
 
 from interaction import (
     conversation_handler,
@@ -57,6 +57,33 @@ scrapers = [JamScraper, immoweb_instance]
 STATES_VASTGOED = 0
 
 
+def main():
+    """Start the bot."""
+    application = Application.builder().token(TOKEN).build()
+
+    user_ids = get_user_ids("databases/user_data.sqlite", "user_data")
+
+    conv_handler = conversation_handler()
+
+    application.add_handler(conv_handler)
+
+    # Start the update_checker in a separate thread
+    update_checker_thread = threading.Thread(
+        target=update_checker, args=(application, user_ids)
+    )
+    update_checker_thread.start()
+    logger.info(f"update_checker scheduled to run every {config.UPDATE_PERIOD} seconds")
+
+    current_time = datetime.now()
+    next_run_time = current_time + timedelta(seconds=config.UPDATE_PERIOD)
+    logger.info(f"Next run time for update_checker: {next_run_time}")
+
+    try:
+        application.run_polling(allowed_updates=Update.ALL_TYPES)
+    except KeyboardInterrupt:
+        pass
+
+
 def generate_saved_listing_response_from_db(db_name, table_name, immo_name, listing):
 
     listing_info = get_listing_info_for_message(listing, db_name, table_name)
@@ -68,7 +95,7 @@ def generate_saved_listing_response_from_db(db_name, table_name, immo_name, list
     return caption, img_url
 
 
-def update_checker(application: Application, user_ids: list):
+def update_checker_logic(application: Application, user_ids: list):
     scraper: VastgoedScraper
     for scraper in scrapers:
         logger.info(f"Checking for new listings from {scraper.get_scraper_name()}")
@@ -117,37 +144,13 @@ def update_checker(application: Application, user_ids: list):
                 logger.exception(e)
 
 
-def main():
-    """Start the bot."""
-    # Create the Application and pass it your bot's token.
-    application = Application.builder().token(TOKEN).build()
-
-    user_ids = get_user_ids("databases/user_data.sqlite", "user_data")
-
-    conv_handler = conversation_handler()
-
-    application.add_handler(conv_handler)
-
-    schedule.every(config.UPDATE_PERIOD).seconds.do(
-        update_checker, application, user_ids
-    )
-    logger.info(f"update_checker scheduled to run every {config.UPDATE_PERIOD} seconds")
-
-    next_run_time = schedule.next_run()
-    logger.info(f"Next run time for update_checker: {next_run_time}")
-
-    polling_thread = threading.Thread(target=start_polling, args=(application,))
-    polling_thread.start()
-
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
-
-
-def start_polling(application):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(application.run_polling(allowed_updates=Update.ALL_TYPES))
+def update_checker(application, user_ids):
+    try:
+        while True:
+            update_checker_logic(application, user_ids)
+            time.sleep(config.UPDATE_PERIOD)
+    except Exception as e:
+        print(f"Error in update_checker: {e}")
 
 
 if __name__ == "__main__":
