@@ -8,7 +8,7 @@ import config
 
 
 sys.path.append("../ImmoBotV2")
-from sqlite import get_saved_listings, get_table_data
+from sqlite import get_saved_listings, get_listing_data
 from scrapers.VastgoedScraper import VastgoedScraper
 
 
@@ -138,7 +138,7 @@ class ImmowebScraper(VastgoedScraper):
 
     def store_and_return_new_listings(self, listings, user_id):
 
-        search_data = get_table_data(
+        search_data = get_listing_data(
             db_name="databases/user_data.sqlite",
             table_name="user_data",
             user_id=user_id,

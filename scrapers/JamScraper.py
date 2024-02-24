@@ -5,14 +5,14 @@ sys.path.append("../ImmoBotV2")
 from scrapers.VastgoedScraper import VastgoedScraper
 import requests
 import sqlite3
-from sqlite import get_saved_listings, get_table_data
+from sqlite import get_saved_listings, get_listing_data
 
 
 class JamScraper(VastgoedScraper):
 
     def get_current_listings(user_id):
 
-        search_data = get_table_data(
+        search_data = get_listing_data(
             db_name="databases/user_data.sqlite",
             table_name="user_data",
             user_id=user_id,
@@ -44,7 +44,7 @@ class JamScraper(VastgoedScraper):
 
     def store_and_return_new_listings(listings, user_id):
 
-        search_data = get_table_data(
+        search_data = get_listing_data(
             db_name="databases/user_data.sqlite",
             table_name="user_data",
             user_id=user_id,

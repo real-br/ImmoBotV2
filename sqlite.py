@@ -57,7 +57,7 @@ def store_data(user_id, column_name, column_value):
     conn.close()
 
 
-def get_table_data(db_name, table_name, user_id):
+def get_listing_data(db_name, table_name, user_id):
     con = sqlite3.connect(db_name)
     cur = con.cursor()
 

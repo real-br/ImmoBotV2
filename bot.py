@@ -128,8 +128,6 @@ def main():
 
     application.add_handler(conv_handler)
 
-    asyncio.set_event_loop(asyncio.new_event_loop())
-
     schedule.every(config.UPDATE_PERIOD).seconds.do(
         update_checker, application, user_ids
     )
@@ -139,13 +137,21 @@ def main():
     logger.info(f"Next run time for update_checker: {next_run_time}")
 
     polling_thread = threading.Thread(
-        target=application.run_polling, kwargs={"allowed_updates": Update.ALL_TYPES}
+        target=start_polling,
+        args=(application,),
+        kwargs={"allowed_updates": Update.ALL_TYPES},
     )
     polling_thread.start()
 
     while True:
         schedule.run_pending()
         time.sleep(1)
+
+
+def start_polling(application):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(application.run_polling(allowed_updates=Update.ALL_TYPES))
 
 
 if __name__ == "__main__":
