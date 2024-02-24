@@ -136,11 +136,7 @@ def main():
     next_run_time = schedule.next_run()
     logger.info(f"Next run time for update_checker: {next_run_time}")
 
-    polling_thread = threading.Thread(
-        target=start_polling,
-        args=(application,),
-        kwargs={"allowed_updates": Update.ALL_TYPES},
-    )
+    polling_thread = threading.Thread(target=start_polling, args=(application,))
     polling_thread.start()
 
     while True:
