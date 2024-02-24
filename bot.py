@@ -98,14 +98,14 @@ def update_checker(application: Application, user_ids: list):
                         )
                     )
                     try:
-                        await application.bot.send_photo(
+                        application.bot.send_photo(
                             chat_id=user_id,
                             photo=listing_photo_url,
                             caption="*NIEUW*\n" + listing_caption,
                             parse_mode="Markdown",
                         )
                     except BadRequest as e:
-                        await application.bot.send_message(
+                        application.bot.send_message(
                             chat_id=user_id,
                             text="*NIEUW*\n" + listing_caption,
                             parse_mode="Markdown",
