@@ -19,6 +19,7 @@ from scrapers.ImmowebScraper import ImmowebScraper
 import schedule
 import time
 import threading
+import asyncio
 
 from interaction import (
     conversation_handler,
@@ -126,6 +127,8 @@ def main():
     conv_handler = conversation_handler()
 
     application.add_handler(conv_handler)
+
+    asyncio.set_event_loop(asyncio.new_event_loop())
 
     schedule.every(config.UPDATE_PERIOD).seconds.do(
         update_checker, application, user_ids
