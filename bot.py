@@ -60,20 +60,23 @@ def main():
 
     application.add_handler(conv_handler)
 
+    # Start the message processing loop in the main thread
+    asyncio.run(process_messages(application))
+
     # Start the update_checker in a separate thread
     update_checker_thread = threading.Thread(
-        target=update_checker_logic, args=(application, user_ids)
+        target=update_checker,
+        args=(application, user_ids),
+        name="update-checker-thread",
     )
     update_checker_thread.start()
     logger.info(f"update_checker scheduled to run every {config.UPDATE_PERIOD} seconds")
 
     try:
-        # Run the message processing loop in the main thread
-        asyncio.run(process_messages(application))
         application.run_polling(allowed_updates=Update.ALL_TYPES)
     except KeyboardInterrupt:
         # Signal the message processing loop to exit by enqueuing a sentinel value
-        asyncio.run_coroutine_threadsafe(message_queue.put(None), application.loop)
+        message_queue.put(None)
 
 
 def generate_saved_listing_response_from_db(db_name, table_name, immo_name, listing):
@@ -87,7 +90,7 @@ def generate_saved_listing_response_from_db(db_name, table_name, immo_name, list
     return caption, img_url
 
 
-def update_checker_logic(application: Application, user_ids: list):
+def update_checker_logic(user_ids: list):
     scraper: VastgoedScraper
     for scraper in scrapers:
         logger.info(f"Checking for new listings from {scraper.get_scraper_name()}")
@@ -127,10 +130,10 @@ def update_checker_logic(application: Application, user_ids: list):
                 logger.exception(e)
 
 
-def update_checker(application, user_ids):
+def update_checker(user_ids):
     try:
         while True:
-            update_checker_logic(application, user_ids)
+            update_checker_logic(user_ids)
             current_time = datetime.now()
             next_run_time = current_time + timedelta(seconds=config.UPDATE_PERIOD)
             logger.info(
