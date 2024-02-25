@@ -42,7 +42,7 @@ immoweb_instance = ImmowebScraper()
 scrapers = [JamScraper]
 
 
-async def main():
+def main():
     """Start the bot."""
     application = Application.builder().token(TOKEN).build()
 
@@ -154,4 +154,4 @@ async def send_listing_photo(application, user_id, listing_photo_url, listing_ca
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
