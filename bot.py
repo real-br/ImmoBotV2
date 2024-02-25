@@ -50,14 +50,12 @@ async def main():
 
     application.add_handler(conv_handler)
 
-    # Create JobQueue instance
-    job_queue = JobQueue(application)
+    # Create a JobQueue
+    job_queue = application.job_queue
 
-    # Add the user_ids to the context and schedule the update_checker_logic job
+    # Schedule the update_checker_logic to run every config.UPDATE_PERIOD seconds
     job_queue.run_repeating(
-        update_checker_logic,
-        interval=config.UPDATE_PERIOD,
-        first=0,
+        update_checker_logic, interval=config.UPDATE_PERIOD, context=None
     )
 
     logger.info(f"update_checker scheduled to run every {config.UPDATE_PERIOD} seconds")
