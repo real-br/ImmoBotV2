@@ -38,7 +38,7 @@ if TOKEN == None:
 
 immoweb_instance = ImmowebScraper()
 
-scrapers = [JamScraper]
+scrapers = [JamScraper, immoweb_instance]
 
 
 def main():
@@ -99,7 +99,9 @@ async def update_checker_logic(context: ContextTypes.DEFAULT_TYPE):
                 current_listings, user_id
             )
             try:
-                logger.info(f"Found {len(new_listings)} new listings")
+                logger.info(
+                    f"Found {len(new_listings)} new listings for {username} ({user_id}) "
+                )
                 for new_listing in new_listings:
                     listing_caption, listing_photo_url = (
                         generate_saved_listing_response_from_db(
