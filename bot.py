@@ -8,6 +8,8 @@ from scrapers.JamScraper import JamScraper
 from scrapers.ImmowebScraper import ImmowebScraper
 import time
 import threading
+import queue
+import asyncio
 from datetime import datetime, timedelta
 
 
@@ -45,6 +47,7 @@ immoweb_instance = ImmowebScraper()
 scrapers = [JamScraper, immoweb_instance]
 
 STATES_VASTGOED = 0
+message_queue = queue.Queue()
 
 
 def main():
@@ -64,10 +67,12 @@ def main():
     update_checker_thread.start()
     logger.info(f"update_checker scheduled to run every {config.UPDATE_PERIOD} seconds")
 
+    asyncio.run(process_messages(application))
+
     try:
         application.run_polling(allowed_updates=Update.ALL_TYPES)
     except KeyboardInterrupt:
-        pass
+        message_queue.put(None)
 
 
 def generate_saved_listing_response_from_db(db_name, table_name, immo_name, listing):
@@ -111,20 +116,11 @@ def update_checker_logic(application: Application, user_ids: list):
                         )
                     )
                     try:
-                        application.bot.send_photo(
-                            chat_id=user_id,
-                            photo=listing_photo_url,
-                            caption="*NIEUW*\n" + listing_caption,
-                            parse_mode="Markdown",
-                        )
-                        logger.info("Sent new listing photo and caption")
-                    except BadRequest as e:
-                        application.bot.send_message(
-                            chat_id=user_id,
-                            text="*NIEUW*\n" + listing_caption,
-                            parse_mode="Markdown",
-                        )
-                        logger.info("Sent new listing caption (photo failed)")
+                        # Enqueue the message to be processed in the main thread
+                        message_queue.put((user_id, listing_photo_url, listing_caption))
+                    except Exception as e:
+                        logger.error(f"Failed to enqueue message. Error: {str(e)}")
+                        logger.exception(e)
             except Exception as e:
                 logger.error(f"Failed to process new listings. Error: {str(e)}")
                 logger.exception(e)
@@ -142,6 +138,37 @@ def update_checker(application, user_ids):
             time.sleep(config.UPDATE_PERIOD)
     except Exception as e:
         print(f"Error in update_checker: {e}")
+
+
+async def send_listing_photo(
+    application: Application, user_id: str, listing_photo_url: str, listing_caption: str
+):
+    try:
+        await application.bot.send_photo(
+            chat_id=user_id,
+            photo=listing_photo_url,
+            caption="*NIEUW*\n" + listing_caption,
+            parse_mode="Markdown",
+        )
+        logger.info("Sent new listing photo and caption")
+    except BadRequest as e:
+        await application.bot.send_message(
+            chat_id=user_id,
+            text="*NIEUW*\n" + listing_caption,
+            parse_mode="Markdown",
+        )
+        logger.info("Sent new listing caption (photo failed)")
+
+
+async def process_messages(application: Application):
+    while True:
+        message = message_queue.get()
+        if message is None:
+            break
+        user_id, listing_photo_url, listing_caption = message
+        await send_listing_photo(
+            application, user_id, listing_photo_url, listing_caption
+        )
 
 
 if __name__ == "__main__":
