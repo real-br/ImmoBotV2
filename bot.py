@@ -174,8 +174,8 @@ def send_listing_photo(application, user_id, listing_photo_url, listing_caption)
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    # Run the coroutine in the new event loop
-    loop.run_until_complete(send_photo())
+    asyncio.run_coroutine_threadsafe(send_photo(), loop).result()
+    loop.close()
 
 
 if __name__ == "__main__":
