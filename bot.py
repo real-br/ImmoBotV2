@@ -130,8 +130,6 @@ def update_checker_logic(application: Application, user_ids: list):
 
 def update_checker(application, user_ids):
     try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
         while True:
             update_checker_logic(application, user_ids)
             current_time = datetime.now()
@@ -142,8 +140,6 @@ def update_checker(application, user_ids):
             time.sleep(config.UPDATE_PERIOD)
     except Exception as e:
         print(f"Error in update_checker: {e}")
-    finally:
-        loop.close()
 
 
 def send_listing_photo(application, user_id, listing_photo_url, listing_caption):
@@ -174,8 +170,12 @@ def send_listing_photo(application, user_id, listing_photo_url, listing_caption)
                 )
             )
 
-    loop = asyncio.get_event_loop()
-    asyncio.run_coroutine_threadsafe(send_photo(), loop)
+    # Create a new event loop
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    # Run the coroutine in the new event loop
+    loop.run_until_complete(send_photo())
 
 
 if __name__ == "__main__":
