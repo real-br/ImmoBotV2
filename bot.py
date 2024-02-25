@@ -60,9 +60,6 @@ def main():
 
     application.add_handler(conv_handler)
 
-    # Start the message processing loop in the main thread
-    asyncio.run(process_messages(application))
-
     # Start the update_checker in a separate thread
     update_checker_thread = threading.Thread(
         target=update_checker,
@@ -71,6 +68,9 @@ def main():
     )
     update_checker_thread.start()
     logger.info(f"update_checker scheduled to run every {config.UPDATE_PERIOD} seconds")
+
+    # Start the message processing loop in the main thread
+    asyncio.run(process_messages(application))
 
     try:
         application.run_polling(allowed_updates=Update.ALL_TYPES)
