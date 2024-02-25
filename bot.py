@@ -10,6 +10,7 @@ import time
 import threading
 import asyncio
 from datetime import datetime, timedelta
+import concurrent.futures
 
 
 from interaction import (
@@ -109,9 +110,13 @@ def update_checker_logic(application: Application, user_ids: list):
                         )
                     )
                     try:
-                        send_listing_photo(
-                            application, user_id, listing_photo_url, listing_caption
+                        future = concurrent.futures.ThreadPoolExecutor().submit(
+                            application.loop.create_task,
+                            send_listing_photo(
+                                application, user_id, listing_photo_url, listing_caption
+                            ),
                         )
+                        future.result()
                     except Exception as e:
                         logger.error(
                             f"Failed to send listing photo and caption. Error: {str(e)}"
