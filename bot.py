@@ -6,7 +6,6 @@ import logging
 from scrapers.VastgoedScraper import VastgoedScraper
 from scrapers.JamScraper import JamScraper
 from scrapers.ImmowebScraper import ImmowebScraper
-import asyncio
 from datetime import datetime, timedelta
 
 
@@ -76,9 +75,9 @@ def generate_saved_listing_response_from_db(db_name, table_name, immo_name, list
 
 
 async def update_checker_logic(context: ContextTypes.DEFAULT_TYPE):
-    application: Application = context.bot
-    user_ids = get_user_ids("databases/user_data.sqlite", "user_data")
 
+    user_ids = get_user_ids("databases/user_data.sqlite", "user_data")
+    scraper: VastgoedScraper
     for scraper in scrapers:
         logger.info(f"Checking for new listings from {scraper.get_scraper_name()}")
         current_listings_immoweb = {}
@@ -86,6 +85,7 @@ async def update_checker_logic(context: ContextTypes.DEFAULT_TYPE):
             current_listings_immoweb = scraper.get_current_listings()
 
         for user_id in user_ids:
+            username = get_username("databases/user_data.sqlite", "user_data", user_id)
             immmo_name = scraper.get_scraper_name()
             db_name = scraper.get_db_name()
             listing_table_name = scraper.get_listing_table_name()
@@ -107,9 +107,29 @@ async def update_checker_logic(context: ContextTypes.DEFAULT_TYPE):
                         )
                     )
                     try:
-                        await send_listing_photo(
-                            application, user_id, listing_photo_url, listing_caption
+                        await context.bot.send_photo(
+                            chat_id=user_id,
+                            photo=listing_photo_url,
+                            caption="*NIEUW*\n" + listing_caption,
+                            parse_mode="Markdown",
                         )
+                        logger.info(
+                            "Sent new listing photo and caption to {username} ({user_id})".format(
+                                username=username, user_id=user_id
+                            )
+                        )
+                    except BadRequest as e:
+                        await context.bot.send_message(
+                            chat_id=user_id,
+                            text="*NIEUW*\n" + listing_caption,
+                            parse_mode="Markdown",
+                        )
+                        logger.info(
+                            "Sent new listing caption (photo failed) to {username} ({user_id})".format(
+                                username=username, user_id=user_id
+                            )
+                        )
+
                     except Exception as e:
                         logger.error(
                             f"Failed to send listing photo and caption. Error: {str(e)}"
@@ -124,34 +144,6 @@ async def update_checker_logic(context: ContextTypes.DEFAULT_TYPE):
     logger.info(
         f"Update checker executed at {current_time}, next run time for update_checker: {next_run_time}"
     )
-
-
-async def send_listing_photo(application, user_id, listing_photo_url, listing_caption):
-    username = get_username("databases/user_data.sqlite", "user_data", user_id)
-
-    try:
-        await application.bot.send_photo(
-            chat_id=user_id,
-            photo=listing_photo_url,
-            caption="*NIEUW*\n" + listing_caption,
-            parse_mode="Markdown",
-        )
-        logger.info(
-            "Sent new listing photo and caption to {username} ({user_id})".format(
-                username=username, user_id=user_id
-            )
-        )
-    except BadRequest as e:
-        await application.bot.send_message(
-            chat_id=user_id,
-            text="*NIEUW*\n" + listing_caption,
-            parse_mode="Markdown",
-        )
-        logger.info(
-            "Sent new listing caption (photo failed) to {username} ({user_id})".format(
-                username=username, user_id=user_id
-            )
-        )
 
 
 if __name__ == "__main__":
