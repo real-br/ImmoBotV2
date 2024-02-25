@@ -17,7 +17,7 @@ import config
 import glob
 
 from telegram import Update
-from telegram.ext import Application, CallbackContext, JobQueue
+from telegram.ext import Application, ContextTypes
 from telegram.error import BadRequest
 from sqlite import get_listing_info_for_message, get_user_ids, get_username
 
@@ -75,7 +75,7 @@ def generate_saved_listing_response_from_db(db_name, table_name, immo_name, list
     return caption, img_url
 
 
-async def update_checker_logic(context: CallbackContext):
+async def update_checker_logic(context: ContextTypes.DEFAULT_TYPE):
     application: Application = context.bot
     user_ids = get_user_ids("databases/user_data.sqlite", "user_data")
 
