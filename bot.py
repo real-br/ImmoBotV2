@@ -47,7 +47,7 @@ immoweb_instance = ImmowebScraper()
 scrapers = [JamScraper, immoweb_instance]
 
 STATES_VASTGOED = 0
-message_queue = queue.Queue()
+message_queue = asyncio.Queue()
 
 
 def main():
@@ -68,12 +68,12 @@ def main():
     logger.info(f"update_checker scheduled to run every {config.UPDATE_PERIOD} seconds")
 
     try:
-        # Run the polling loop in the main thread
+        # Run the message processing loop in the main thread
         asyncio.run(process_messages(application))
         application.run_polling(allowed_updates=Update.ALL_TYPES)
     except KeyboardInterrupt:
         # Signal the message processing loop to exit by enqueuing a sentinel value
-        message_queue.put(None)
+        asyncio.run_coroutine_threadsafe(message_queue.put(None), application.loop)
 
 
 def generate_saved_listing_response_from_db(db_name, table_name, immo_name, listing):
