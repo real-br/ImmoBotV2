@@ -63,7 +63,7 @@ def main():
     # Start the update_checker in a separate thread
     update_checker_thread = threading.Thread(
         target=update_checker,
-        args=(application, user_ids),
+        args=(user_ids),
         name="update-checker-thread",
     )
     update_checker_thread.start()
