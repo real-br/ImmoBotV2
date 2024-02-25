@@ -6,11 +6,8 @@ import logging
 from scrapers.VastgoedScraper import VastgoedScraper
 from scrapers.JamScraper import JamScraper
 from scrapers.ImmowebScraper import ImmowebScraper
-import time
-import threading
 import asyncio
 from datetime import datetime, timedelta
-import concurrent.futures
 
 
 from interaction import (
@@ -47,7 +44,7 @@ immoweb_instance = ImmowebScraper()
 scrapers = [JamScraper]
 
 
-def main():
+async def main():
     """Start the bot."""
     application = Application.builder().token(TOKEN).build()
 
@@ -57,16 +54,10 @@ def main():
 
     application.add_handler(conv_handler)
 
-    # Start the update_checker in a separate thread
-    update_checker_thread = threading.Thread(
-        target=update_checker,
-        args=(application, user_ids),
-        name="update-checker-thread",
-    )
-    update_checker_thread.start()
+    asyncio.create_task(update_checker_logic(application, user_ids))
     logger.info(f"update_checker scheduled to run every {config.UPDATE_PERIOD} seconds")
 
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
+    await application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 def generate_saved_listing_response_from_db(db_name, table_name, immo_name, listing):
@@ -80,103 +71,84 @@ def generate_saved_listing_response_from_db(db_name, table_name, immo_name, list
     return caption, img_url
 
 
-def update_checker_logic(application: Application, user_ids: list):
-    scraper: VastgoedScraper
-    for scraper in scrapers:
-        logger.info(f"Checking for new listings from {scraper.get_scraper_name()}")
-        current_listings_immoweb = {}
-        if scraper.get_scraper_name() == "Immoweb":
-            current_listings_immoweb = scraper.get_current_listings()
+async def update_checker_logic(application: Application, user_ids: list):
+    while True:
+        scraper: VastgoedScraper
+        for scraper in scrapers:
+            logger.info(f"Checking for new listings from {scraper.get_scraper_name()}")
+            current_listings_immoweb = {}
+            if scraper.get_scraper_name() == "Immoweb":
+                current_listings_immoweb = scraper.get_current_listings()
 
-        for user_id in user_ids:
-            immmo_name = scraper.get_scraper_name()
-            db_name = scraper.get_db_name()
-            listing_table_name = scraper.get_listing_table_name()
-            current_listings = (
-                scraper.get_current_listings(user_id)
-                if scraper.get_scraper_name() != "Immoweb"
-                else current_listings_immoweb
-            )
+            for user_id in user_ids:
+                immmo_name = scraper.get_scraper_name()
+                db_name = scraper.get_db_name()
+                listing_table_name = scraper.get_listing_table_name()
+                current_listings = (
+                    scraper.get_current_listings(user_id)
+                    if scraper.get_scraper_name() != "Immoweb"
+                    else current_listings_immoweb
+                )
 
-            new_listings = scraper.store_and_return_new_listings(
-                current_listings, user_id
-            )
-            try:
-                logger.info(f"Found {len(new_listings)} new listings")
-                for new_listing in new_listings:
-                    listing_caption, listing_photo_url = (
-                        generate_saved_listing_response_from_db(
-                            db_name, listing_table_name, immmo_name, new_listing
+                new_listings = scraper.store_and_return_new_listings(
+                    current_listings, user_id
+                )
+                try:
+                    logger.info(f"Found {len(new_listings)} new listings")
+                    for new_listing in new_listings:
+                        listing_caption, listing_photo_url = (
+                            generate_saved_listing_response_from_db(
+                                db_name, listing_table_name, immmo_name, new_listing
+                            )
                         )
-                    )
-                    try:
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
+                        try:
+                            await send_listing_photo(
+                                application, user_id, listing_photo_url, listing_caption
+                            )
+                        except Exception as e:
+                            logger.error(
+                                f"Failed to send listing photo and caption. Error: {str(e)}"
+                            )
+                            logger.exception(e)
+                except Exception as e:
+                    logger.error(f"Failed to process new listings. Error: {str(e)}")
+                    logger.exception(e)
 
-                        send_listing_photo(
-                            application,
-                            user_id,
-                            listing_photo_url,
-                            listing_caption,
-                            loop,
-                        )
-                    except Exception as e:
-                        logger.error(
-                            f"Failed to send listing photo and caption. Error: {str(e)}"
-                        )
-                        logger.exception(e)
-            except Exception as e:
-                logger.error(f"Failed to process new listings. Error: {str(e)}")
-                logger.exception(e)
-
-
-def update_checker(application, user_ids):
-    try:
-        while True:
-            update_checker_logic(application, user_ids)
-            current_time = datetime.now()
-            next_run_time = current_time + timedelta(seconds=config.UPDATE_PERIOD)
-            logger.info(
-                f"Update checker executed at {current_time}, next run time for update_checker: {next_run_time}"
-            )
-            time.sleep(config.UPDATE_PERIOD)
-    except Exception as e:
-        print(f"Error in update_checker: {e}")
+        current_time = datetime.now()
+        next_run_time = current_time + timedelta(seconds=config.UPDATE_PERIOD)
+        logger.info(
+            f"Update checker executed at {current_time}, next run time for update_checker: {next_run_time}"
+        )
+        await asyncio.sleep(config.UPDATE_PERIOD)
 
 
-def send_listing_photo(application, user_id, listing_photo_url, listing_caption, loop):
+async def send_listing_photo(application, user_id, listing_photo_url, listing_caption):
     username = get_username("databases/user_data.sqlite", "user_data", user_id)
 
-    async def send_photo():
-        try:
-            await application.bot.send_photo(
-                chat_id=user_id,
-                photo=listing_photo_url,
-                caption="*NIEUW*\n" + listing_caption,
-                parse_mode="Markdown",
+    try:
+        await application.bot.send_photo(
+            chat_id=user_id,
+            photo=listing_photo_url,
+            caption="*NIEUW*\n" + listing_caption,
+            parse_mode="Markdown",
+        )
+        logger.info(
+            "Sent new listing photo and caption to {username} ({user_id})".format(
+                username=username, user_id=user_id
             )
-            logger.info(
-                "Sent new listing photo and caption to {username} ({user_id})".format(
-                    username=username, user_id=user_id
-                )
+        )
+    except BadRequest as e:
+        await application.bot.send_message(
+            chat_id=user_id,
+            text="*NIEUW*\n" + listing_caption,
+            parse_mode="Markdown",
+        )
+        logger.info(
+            "Sent new listing caption (photo failed) to {username} ({user_id})".format(
+                username=username, user_id=user_id
             )
-        except BadRequest as e:
-            await application.bot.send_message(
-                chat_id=user_id,
-                text="*NIEUW*\n" + listing_caption,
-                parse_mode="Markdown",
-            )
-            logger.info(
-                "Sent new listing caption (photo failed) to {username} ({user_id})".format(
-                    username=username, user_id=user_id
-                )
-            )
-
-    # Run the coroutine in the specified event loop
-    loop.run_until_complete(send_photo())
-    loop.close()
-    time.sleep(1)
+        )
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
