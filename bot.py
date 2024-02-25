@@ -43,7 +43,7 @@ if TOKEN == None:
 
 immoweb_instance = ImmowebScraper()
 
-scrapers = [JamScraper, immoweb_instance]
+scrapers = [JamScraper]
 
 
 def main():
