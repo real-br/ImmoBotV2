@@ -60,19 +60,25 @@ def main():
 
     application.add_handler(conv_handler)
 
+    # Start the message processing loop in the background
+    message_processing_task = asyncio.create_task(process_messages(application))
+
     # Start the update_checker in a separate thread
     update_checker_thread = threading.Thread(
-        target=update_checker, args=(application, user_ids)
+        target=update_checker_logic, args=(application, user_ids)
     )
     update_checker_thread.start()
     logger.info(f"update_checker scheduled to run every {config.UPDATE_PERIOD} seconds")
 
-    asyncio.run(process_messages(application))
-
     try:
+        # Run the polling loop in the main thread
         application.run_polling(allowed_updates=Update.ALL_TYPES)
     except KeyboardInterrupt:
+        # Signal the message processing loop to exit by enqueuing a sentinel value
         message_queue.put(None)
+
+    # Wait for the message processing task to complete
+    asyncio.run(message_processing_task)
 
 
 def generate_saved_listing_response_from_db(db_name, table_name, immo_name, listing):
