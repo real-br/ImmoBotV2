@@ -126,10 +126,10 @@ def update_checker_logic(application: Application, user_ids: list):
                 logger.exception(e)
 
 
-def update_checker(user_ids):
+def update_checker(application, user_ids):
     try:
         while True:
-            update_checker_logic(user_ids)
+            update_checker_logic(application, user_ids)
             current_time = datetime.now()
             next_run_time = current_time + timedelta(seconds=config.UPDATE_PERIOD)
             logger.info(
