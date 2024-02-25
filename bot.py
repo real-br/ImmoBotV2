@@ -142,10 +142,9 @@ def update_checker(application, user_ids):
 
 def send_listing_photo(application, user_id, listing_photo_url, listing_caption):
     username = get_username("databases/user_data.sqlite", "user_data", user_id)
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+
     try:
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             application.bot.send_photo(
                 chat_id=user_id,
                 photo=listing_photo_url,
@@ -159,7 +158,7 @@ def send_listing_photo(application, user_id, listing_photo_url, listing_caption)
             )
         )
     except BadRequest as e:
-        asyncio.get_event_loop().run_until_complete(
+        asyncio.run(
             application.bot.send_message(
                 chat_id=user_id,
                 text="*NIEUW*\n" + listing_caption,
@@ -171,7 +170,6 @@ def send_listing_photo(application, user_id, listing_photo_url, listing_caption)
                 username=username, user_id=user_id
             )
         )
-    loop.close()
 
 
 if __name__ == "__main__":
