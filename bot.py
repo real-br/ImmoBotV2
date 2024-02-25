@@ -58,7 +58,6 @@ def main():
         update_checker_logic,
         interval=config.UPDATE_PERIOD,
         first=0,
-        context={"user_ids": get_user_ids("databases/user_data.sqlite", "user_data")},
     )
 
     logger.info(f"update_checker scheduled to run every {config.UPDATE_PERIOD} seconds")
@@ -78,7 +77,7 @@ def generate_saved_listing_response_from_db(db_name, table_name, immo_name, list
 
 async def update_checker_logic(context: CallbackContext):
     application: Application = context.bot
-    user_ids = context.job.context.get("user_ids", [])
+    user_ids = get_user_ids("databases/user_data.sqlite", "user_data")
 
     for scraper in scrapers:
         logger.info(f"Checking for new listings from {scraper.get_scraper_name()}")

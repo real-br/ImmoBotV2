@@ -1,6 +1,6 @@
 regex
 bs4
-python-telegram-bot==20.0a1
+python-telegram-bot[job-queue]==20.0a1
 requests
 urllib3==1.26.15
 toolz
