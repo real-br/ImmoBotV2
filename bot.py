@@ -111,10 +111,11 @@ def update_checker_logic(application: Application, user_ids: list):
                     )
                     try:
                         future = concurrent.futures.ThreadPoolExecutor().submit(
-                            application.loop.create_task,
-                            send_listing_photo(
-                                application, user_id, listing_photo_url, listing_caption
-                            ),
+                            send_listing_photo,
+                            application,
+                            user_id,
+                            listing_photo_url,
+                            listing_caption,
                         )
                         future.result()
                     except Exception as e:
