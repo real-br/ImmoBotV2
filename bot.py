@@ -170,12 +170,14 @@ async def send_listing_photo(
         )
 
 
-async def process_messages(application: Application):
+async def process_messages(application):
     while True:
-        message = message_queue.get()
+        message = await message_queue.get()
         if message is None:
-            break
-        user_id, listing_photo_url, listing_caption = message
+            break  # Exit the loop when a sentinel value is received
+        user_id, listing_photo_url, listing_caption = (
+            await message
+        )  # Await the coroutine
         await send_listing_photo(
             application, user_id, listing_photo_url, listing_caption
         )
