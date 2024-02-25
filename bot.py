@@ -140,36 +140,32 @@ def update_checker(application, user_ids):
         loop.close()
 
 
-def send_listing_photo(application, user_id, listing_photo_url, listing_caption):
+async def send_listing_photo(application, user_id, listing_photo_url, listing_caption):
     username = get_username("databases/user_data.sqlite", "user_data", user_id)
 
-    async def send_photo():
-        try:
-            await application.bot.send_photo(
-                chat_id=user_id,
-                photo=listing_photo_url,
-                caption="*NIEUW*\n" + listing_caption,
-                parse_mode="Markdown",
+    try:
+        await application.bot.send_photo(
+            chat_id=user_id,
+            photo=listing_photo_url,
+            caption="*NIEUW*\n" + listing_caption,
+            parse_mode="Markdown",
+        )
+        logger.info(
+            "Sent new listing photo and caption to {username} ({user_id})".format(
+                username=username, user_id=user_id
             )
-            logger.info(
-                "Sent new listing photo and caption to {username} ({user_id})".format(
-                    username=username, user_id=user_id
-                )
+        )
+    except BadRequest as e:
+        await application.bot.send_message(
+            chat_id=user_id,
+            text="*NIEUW*\n" + listing_caption,
+            parse_mode="Markdown",
+        )
+        logger.info(
+            "Sent new listing caption (photo failed) to {username} ({user_id})".format(
+                username=username, user_id=user_id
             )
-        except BadRequest as e:
-            await application.bot.send_message(
-                chat_id=user_id,
-                text="*NIEUW*\n" + listing_caption,
-                parse_mode="Markdown",
-            )
-            logger.info(
-                "Sent new listing caption (photo failed) to {username} ({user_id})".format(
-                    username=username, user_id=user_id
-                )
-            )
-
-    loop = asyncio.get_event_loop()
-    loop.create_task(send_photo())
+        )
 
 
 if __name__ == "__main__":
