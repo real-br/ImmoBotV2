@@ -60,8 +60,6 @@ def main():
 
     application.add_handler(conv_handler)
 
-    application.run_polling(allowed_updates=Update.ALL_TYPES)
-
     # Start the update_checker in a separate thread
     update_checker_thread = threading.Thread(
         target=update_checker,
@@ -70,6 +68,8 @@ def main():
     )
     update_checker_thread.start()
     logger.info(f"update_checker scheduled to run every {config.UPDATE_PERIOD} seconds")
+
+    application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 def generate_saved_listing_response_from_db(db_name, table_name, immo_name, listing):
