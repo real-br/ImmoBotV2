@@ -174,6 +174,8 @@ def send_listing_photo(application, user_id, listing_photo_url, listing_caption,
 
     # Run the coroutine in the specified event loop
     loop.run_until_complete(send_photo())
+    loop.close()
+    time.sleep(1)
 
 
 if __name__ == "__main__":
