@@ -55,7 +55,8 @@ async def main():
 
     # Schedule the update_checker_logic to run every config.UPDATE_PERIOD seconds
     job_queue.run_repeating(
-        update_checker_logic, interval=config.UPDATE_PERIOD, context=None
+        update_checker_logic,
+        interval=config.UPDATE_PERIOD,
     )
 
     logger.info(f"update_checker scheduled to run every {config.UPDATE_PERIOD} seconds")
