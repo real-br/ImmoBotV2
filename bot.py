@@ -24,7 +24,7 @@ from telegram.ext import (
     Application,
 )
 from telegram.error import BadRequest
-from sqlite import get_listing_info_for_message, get_user_ids
+from sqlite import get_listing_info_for_message, get_user_ids, get_username
 
 
 # Enable logging
@@ -133,7 +133,7 @@ def update_checker(application, user_ids):
             current_time = datetime.now()
             next_run_time = current_time + timedelta(seconds=config.UPDATE_PERIOD)
             logger.info(
-                f"Running at {current_time}, next run time for update_checker: {next_run_time}"
+                f"Update checker executed at {current_time}, next run time for update_checker: {next_run_time}"
             )
             time.sleep(config.UPDATE_PERIOD)
     except Exception as e:
@@ -143,6 +143,7 @@ def update_checker(application, user_ids):
 async def send_listing_photo(
     application: Application, user_id: str, listing_photo_url: str, listing_caption: str
 ):
+    username = get_username("databases/user_data.sqlite", "user_data", user_id)
     try:
         await application.bot.send_photo(
             chat_id=user_id,
@@ -150,14 +151,22 @@ async def send_listing_photo(
             caption="*NIEUW*\n" + listing_caption,
             parse_mode="Markdown",
         )
-        logger.info("Sent new listing photo and caption")
+        logger.info(
+            "Sent new listing photo and caption to {username} ({user_id})".format(
+                username=username, user_id=user_id
+            )
+        )
     except BadRequest as e:
         await application.bot.send_message(
             chat_id=user_id,
             text="*NIEUW*\n" + listing_caption,
             parse_mode="Markdown",
         )
-        logger.info("Sent new listing caption (photo failed)")
+        logger.info(
+            "Sent new listing caption (photo failed) to {username} ({user_id})".format(
+                username=username, user_id=user_id
+            )
+        )
 
 
 async def process_messages(application: Application):

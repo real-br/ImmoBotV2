@@ -90,3 +90,18 @@ def get_user_ids(db_name, table_name):
     con.close()
 
     return [id[0] for id in ids]
+
+
+def get_username(db_name, table_name, user_id):
+    con = sqlite3.connect(db_name)
+    cur = con.cursor()
+
+    cur.execute(
+        "SELECT full_name FROM {table_name} WHERE user_id={user_id}".format(
+            table_name=table_name, user_id=user_id
+        )
+    )
+    username = cur.fetchone()
+    con.close()
+
+    return username[0]
