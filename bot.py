@@ -110,14 +110,16 @@ def update_checker_logic(application: Application, user_ids: list):
                         )
                     )
                     try:
-                        future = concurrent.futures.ThreadPoolExecutor().submit(
-                            send_listing_photo,
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+
+                        send_listing_photo(
                             application,
                             user_id,
                             listing_photo_url,
                             listing_caption,
+                            loop,
                         )
-                        future.result()
                     except Exception as e:
                         logger.error(
                             f"Failed to send listing photo and caption. Error: {str(e)}"
@@ -142,7 +144,7 @@ def update_checker(application, user_ids):
         print(f"Error in update_checker: {e}")
 
 
-def send_listing_photo(application, user_id, listing_photo_url, listing_caption):
+def send_listing_photo(application, user_id, listing_photo_url, listing_caption, loop):
     username = get_username("databases/user_data.sqlite", "user_data", user_id)
 
     async def send_photo():
@@ -170,10 +172,8 @@ def send_listing_photo(application, user_id, listing_photo_url, listing_caption)
                 )
             )
 
-    # Create a new event loop
-    loop = asyncio.new_event_loop()
-    asyncio.run_coroutine_threadsafe(send_photo(), loop).result()
-    loop.close()
+    # Run the coroutine in the specified event loop
+    loop.run_until_complete(send_photo())
 
 
 if __name__ == "__main__":
