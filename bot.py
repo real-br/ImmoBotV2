@@ -60,23 +60,16 @@ def main():
 
     application.add_handler(conv_handler)
 
+    application.run_polling(allowed_updates=Update.ALL_TYPES)
+
     # Start the update_checker in a separate thread
     update_checker_thread = threading.Thread(
         target=update_checker,
-        args=(user_ids,),
+        args=(application, user_ids),
         name="update-checker-thread",
     )
     update_checker_thread.start()
     logger.info(f"update_checker scheduled to run every {config.UPDATE_PERIOD} seconds")
-
-    # Start the message processing loop in the main thread
-    asyncio.run(process_messages(application))
-
-    try:
-        application.run_polling(allowed_updates=Update.ALL_TYPES)
-    except KeyboardInterrupt:
-        # Signal the message processing loop to exit by enqueuing a sentinel value
-        message_queue.put(None)
 
 
 def generate_saved_listing_response_from_db(db_name, table_name, immo_name, listing):
@@ -90,7 +83,7 @@ def generate_saved_listing_response_from_db(db_name, table_name, immo_name, list
     return caption, img_url
 
 
-def update_checker_logic(user_ids: list):
+def update_checker_logic(application: Application, user_ids: list):
     scraper: VastgoedScraper
     for scraper in scrapers:
         logger.info(f"Checking for new listings from {scraper.get_scraper_name()}")
@@ -120,10 +113,13 @@ def update_checker_logic(user_ids: list):
                         )
                     )
                     try:
-                        # Enqueue the message to be processed in the main thread
-                        message_queue.put((user_id, listing_photo_url, listing_caption))
+                        send_listing_photo(
+                            application, user_id, listing_photo_url, listing_caption
+                        )
                     except Exception as e:
-                        logger.error(f"Failed to enqueue message. Error: {str(e)}")
+                        logger.error(
+                            f"Failed to send listing photo and caption. Error: {str(e)}"
+                        )
                         logger.exception(e)
             except Exception as e:
                 logger.error(f"Failed to process new listings. Error: {str(e)}")
@@ -144,16 +140,18 @@ def update_checker(user_ids):
         print(f"Error in update_checker: {e}")
 
 
-async def send_listing_photo(
-    application: Application, user_id: str, listing_photo_url: str, listing_caption: str
-):
+def send_listing_photo(application, user_id, listing_photo_url, listing_caption):
     username = get_username("databases/user_data.sqlite", "user_data", user_id)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     try:
-        await application.bot.send_photo(
-            chat_id=user_id,
-            photo=listing_photo_url,
-            caption="*NIEUW*\n" + listing_caption,
-            parse_mode="Markdown",
+        asyncio.get_event_loop().run_until_complete(
+            application.bot.send_photo(
+                chat_id=user_id,
+                photo=listing_photo_url,
+                caption="*NIEUW*\n" + listing_caption,
+                parse_mode="Markdown",
+            )
         )
         logger.info(
             "Sent new listing photo and caption to {username} ({user_id})".format(
@@ -161,29 +159,19 @@ async def send_listing_photo(
             )
         )
     except BadRequest as e:
-        await application.bot.send_message(
-            chat_id=user_id,
-            text="*NIEUW*\n" + listing_caption,
-            parse_mode="Markdown",
+        asyncio.get_event_loop().run_until_complete(
+            application.bot.send_message(
+                chat_id=user_id,
+                text="*NIEUW*\n" + listing_caption,
+                parse_mode="Markdown",
+            )
         )
         logger.info(
             "Sent new listing caption (photo failed) to {username} ({user_id})".format(
                 username=username, user_id=user_id
             )
         )
-
-
-async def process_messages(application):
-    while True:
-        message = await message_queue.get()
-        if message is None:
-            break  # Exit the loop when a sentinel value is received
-        user_id, listing_photo_url, listing_caption = (
-            await message
-        )  # Await the coroutine
-        await send_listing_photo(
-            application, user_id, listing_photo_url, listing_caption
-        )
+    loop.close()
 
 
 if __name__ == "__main__":
