@@ -8,7 +8,6 @@ from scrapers.JamScraper import JamScraper
 from scrapers.ImmowebScraper import ImmowebScraper
 import time
 import threading
-import queue
 import asyncio
 from datetime import datetime, timedelta
 
@@ -46,8 +45,7 @@ immoweb_instance = ImmowebScraper()
 
 scrapers = [JamScraper, immoweb_instance]
 
-STATES_VASTGOED = 0
-message_queue = asyncio.Queue()
+loop = asyncio.get_event_loop()
 
 
 def main():
@@ -144,7 +142,7 @@ def send_listing_photo(application, user_id, listing_photo_url, listing_caption)
     username = get_username("databases/user_data.sqlite", "user_data", user_id)
 
     try:
-        asyncio.run(
+        loop.run_until_complete(
             application.bot.send_photo(
                 chat_id=user_id,
                 photo=listing_photo_url,
@@ -158,7 +156,7 @@ def send_listing_photo(application, user_id, listing_photo_url, listing_caption)
             )
         )
     except BadRequest as e:
-        asyncio.run(
+        loop.run_until_complete(
             application.bot.send_message(
                 chat_id=user_id,
                 text="*NIEUW*\n" + listing_caption,
