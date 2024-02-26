@@ -7,4 +7,5 @@
 - [ ] Refactor code to be more concise
 - [ ] Use more config instead of hardcoding
 - [ ] Add patreon link every 10 suggestions
-- [ ] Check if the code can be hosted online
+- [ ] Add username in logging
+- [ ] make send photo asynchronous in separate function
