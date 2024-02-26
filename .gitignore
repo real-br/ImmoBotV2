@@ -5,6 +5,7 @@ __pycache*
 databases/jam.sqlite
 databases/user_data.sqlite
 databases/immoweb.sqlite
+databases/latouretpetit.sqlite
 *.out
 playground.py
 *.sql
