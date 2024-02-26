@@ -20,7 +20,6 @@ class LatourEtPetitScraper(VastgoedScraper):
 
         attribute_mapping = {"RENT": "rentals", "BUY": "sales"}
 
-        breakpoint()
         payload = {
             "filters": {"zipcodes": search_data.get("location").split(",")},
             "pagination": {"page": 1, "limit": 100},
