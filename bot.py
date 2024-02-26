@@ -6,6 +6,7 @@ import logging
 from scrapers.VastgoedScraper import VastgoedScraper
 from scrapers.JamScraper import JamScraper
 from scrapers.ImmowebScraper import ImmowebScraper
+from scrapers.LatourEtPetitScraper import LatourEtPetitScraper
 from datetime import datetime, timedelta
 
 
@@ -38,7 +39,7 @@ if TOKEN == None:
 
 immoweb_instance = ImmowebScraper()
 
-scrapers = [JamScraper, immoweb_instance]
+scrapers = [JamScraper, LatourEtPetitScraper, immoweb_instance]
 
 
 def main():
